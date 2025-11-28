@@ -1,0 +1,49 @@
+# Arquivos de Bytecode e Otimizados do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+poetry.lock
+
+# Ambientes Virtuais
+venv/
+env/
+.venv/
+.env/
+
+# Arquivos de Banco de Dados de Desenvolvimento
+*.sqlite3
+db.sqlite3-journal
+
+# Arquivos de Mídia e Estáticos coletados pelo Django
+# Descomente se você não quiser versionar os arquivos enviados pelos usuários
+# media/
+# Descomente se você não quiser versionar os arquivos estáticos coletados
+# staticfiles/
+
+# Arquivos de configuração local (não devem ser compartilhados)
+local_settings.py
+
+# Arquivos de log
+*.log
+
+# Arquivos de dependências e pacotes
+pip-log.txt
+*.egg-info/
+
+# Arquivos de IDEs e Editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Arquivos gerados pelo Sistema Operacional
+# Mac
+.DS_Store
+# Windows
+Thumbs.db
+
+# Arquivos de segredos e variáveis de ambiente
+.env
+*.env
