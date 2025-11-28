@@ -1,36 +1,130 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Count
 from .models import Producao
-from .forms import CustomSetPasswordForm
+from .forms import CustomUserCreationForm, UserUpdateForm, ProfileUpdateForm
+# views.py
+from django.contrib.auth import logout
+from django.contrib import messages
 
+def custom_logout(request):
+    """
+    View personalizada para logout com mensagem
+    """
+    logout(request)
+    messages.success(request, 'Você foi desconectado com sucesso!')
+    return redirect('home')
 
-# Create your views here.
+def custom_login(request):
+    """
+    View personalizada para login
+    """
+    if request.user.is_authenticated:
+        return redirect('home')
+    
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Bem-vindo, {username}!')
+                
+                # Redirecionar para a página que o usuário tentou acessar ou home
+                next_url = request.GET.get('next', 'home')
+                return redirect(next_url)
+        else:
+            messages.error(request, 'Usuário ou senha inválidos.')
+    else:
+        form = AuthenticationForm()
+    
+    return render(request, 'registration/login.html', {'form': form})
+
+def cadastro(request):
+    """
+    View para cadastro de novos usuários
+    """
+    if request.user.is_authenticated:
+        return redirect('home')
+    
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            
+            # Fazer login automaticamente após o cadastro
+            login(request, user)
+            messages.success(request, f'Conta criada com sucesso! Bem-vindo, {user.username}!')
+            return redirect('home')
+        else:
+            messages.error(request, 'Por favor, corrija os erros abaixo.')
+    else:
+        form = CustomUserCreationForm()
+    
+    return render(request, 'registration/cadastro.html', {'form': form})
+
+@login_required
+def perfil(request):
+    """
+    View para edição do perfil do usuário
+    """
+    if request.method == 'POST':
+        user_form = UserUpdateForm(request.POST, instance=request.user)
+        profile_form = ProfileUpdateForm(request.POST, instance=request.user.profile)
+        
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, 'Seu perfil foi atualizado com sucesso!')
+            return redirect('perfil')
+    else:
+        user_form = UserUpdateForm(instance=request.user)
+        profile_form = ProfileUpdateForm(instance=request.user.profile)
+    
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form
+    }
+    
+    return render(request, 'registration/perfil.html', context)
+
 def home(request):
     """
     View para a página inicial.
-    - Se o usuário estiver logado, mostra apenas suas produções.
-    - Se não estiver logado, mostra todas as produções.
     """
-    # Se o usuário estiver logado E NÃO for um superusuário, mostre apenas suas produções.
     if request.user.is_authenticated and not request.user.is_superuser:
-        # Este é um projetista comum.
         producoes = Producao.objects.filter(projetista=request.user).order_by('-data')
     else:
-        # Para visitantes OU para o superusuário, mostre todas as produções.
         producoes = Producao.objects.all().order_by('-data')
 
-    return render(request, 'home.html', {'producoes': producoes})
+    # Cálculo das estatísticas
+    stats_query = producoes.values('status').annotate(total=Count('id'))
+    
+    stats_dict = {
+        'PENDENTE': 0,
+        'EM_ANDAMENTO': 0,
+        'REVISAO': 0,
+        'CONCLUIDO': 0,
+        'CANCELADO': 0,
+        'total': 0
+    }
+    
+    for stat in stats_query:
+        stats_dict[stat['status']] = stat['total']
+        stats_dict['total'] += stat['total']
 
-@login_required
-def change_password(request):
-    form = CustomSetPasswordForm(request.user)
-    if request.method == 'POST':
-        form = CustomSetPasswordForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            # Marca que o usuário não precisa mais trocar a senha
-            user.profile.must_change_password = False
-            user.profile.save()
-            return redirect('home')
+    producoes = producoes.select_related(
+        'projetista', 'tipo_projeto', 'categoria'
+    ).prefetch_related('historico')
 
-    return render(request, 'core/change_password.html', {'form': form})
+    context = {
+        'producoes': producoes,
+        'stats': stats_dict,
+    }
+
+    return render(request, 'home.html', context)

@@ -133,6 +133,16 @@
             color: #dc3545;
         }
         
+        .status-in-progress {
+            background-color: rgba(32, 201, 151, 0.15);
+            color: #20a362;
+        }
+        
+        .status-review {
+            background-color: rgba(147, 51, 234, 0.15);
+            color: #9333ea;
+        }
+        
         .btn-primary {
             background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
             border: none;
@@ -209,11 +219,125 @@
         .sort-icon:hover {
             opacity: 1;
         }
+        
+        /* Estilos para o histórico */
+        .historico-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .historico-toggle:hover {
+            transform: scale(1.1);
+        }
+        
+        .historico-row {
+            background-color: #f8f9fa !important;
+        }
+        
+        .historico-table {
+            font-size: 0.85rem;
+            margin: 0;
+        }
+        
+        .historico-table th {
+            background-color: #6c757d !important;
+            font-size: 0.8rem;
+            padding: 0.5rem;
+        }
+        
+        .historico-table td {
+            padding: 0.5rem;
+            border-color: #dee2e6;
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.5rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary-color);
+        }
+        
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 1.2rem;
+            width: 2px;
+            height: calc(100% + 0.5rem);
+            background: #dee2e6;
+        }
+        
+        .timeline-item:last-child::after {
+            display: none;
+        }
+        
+        .collapse-row {
+            border-top: 2px solid var(--primary-color);
+        }
+        
+        .tempo-conclusao {
+            background-color: rgba(76, 201, 240, 0.1);
+            border-left: 3px solid #0d6efd;
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+        
+        .tempo-badge {
+            background: linear-gradient(135deg, #0d6efd, #4895ef);
+            color: white;
+            border-radius: 12px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .stats-card {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 8px;
+            color: white;
+        }
+        
+        .stats-card.pendente { background: linear-gradient(135deg, #fd7e14, #ff922b); }
+        .stats-card.andamento { background: linear-gradient(135deg, #a8a81b, #dede1e); }
+        .stats-card.revisao { background: linear-gradient(135deg, #9333ea, #a855f7); }
+        .stats-card.concluido { background: linear-gradient(135deg, #119322, #17aa2b); }
+        .stats-card.cancelado { background: linear-gradient(135deg, #dc3545, #e74c3c); }
     </style>
 </head>
 <body>
 
     <div class="container mt-4">
+        <!-- Mensagens -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <i class="fas 
+                        {% if message.tags == 'success' %}fa-check-circle
+                        {% elif message.tags == 'error' %}fa-exclamation-circle
+                        {% else %}fa-info-circle{% endif %} me-2">
+                    </i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <div class="header-section d-flex justify-content-between align-items-center mb-4">
             {% if user.is_authenticated %}
                 <div class="user-info">
@@ -225,30 +349,98 @@
                         <p class="mb-0 opacity-75">Bem-vindo ao sistema de produção</p>
                     </div>
                 </div>
-                <a href="{% url 'logout' %}" class="btn btn-danger">
-                    <i class="fas fa-sign-out-alt me-2"></i>Sair
-                </a>
+                <div class="d-flex align-items-center">
+                    <div class="dropdown me-3">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>Minha Conta
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'perfil' %}"><i class="fas fa-user-edit me-2"></i>Meu Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <!-- Formulário para logout -->
+                                <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item border-0 bg-transparent w-100 text-start">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Sair
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             {% else %}
                 <div>
                     <h1 class="h4 mb-0">Produção de Projetos</h1>
                     <p class="mb-0 opacity-75">Sistema de controle de produção</p>
                 </div>
-                <a href="{% url 'login' %}" class="btn btn-primary">
-                    <i class="fas fa-sign-in-alt me-2"></i>Login
-                </a>
+                <div>
+                    <a href="{% url 'login' %}" class="btn btn-primary me-2">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                    <a href="{% url 'cadastro' %}" class="btn btn-outline-light">
+                        <i class="fas fa-user-plus me-2"></i>Cadastrar
+                    </a>
+                </div>
             {% endif %}
         </div>
 
-        {# Se o usuário for um superuser, mostra o gráfico #}
-        {% if user.is_authenticated and user.is_superuser %}
+        {# Gráfico de Status - Mostrado para todos os usuários autenticados #}
+        {% if user.is_authenticated %}
         <div class="card mb-4">
             <div class="card-header d-flex align-items-center">
                 <i class="fas fa-chart-bar me-2"></i>
-                Gráfico de Produção por Projetista
+                Distribuição de Projetos por Status
             </div>
             <div class="card-body p-0">
                 <div class="chart-container">
-                    <canvas id="producaoChart"></canvas>
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards de Estatísticas Rápidas -->
+        <div class="row mb-4">
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card cancelado">
+                    <i class="fas fa-times-circle fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.CANCELADO|default:0 }}</h4>
+                    <small>Cancelados</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card pendente">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.PENDENTE|default:0 }}</h4>
+                    <small>Pendentes</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card andamento">
+                    <i class="fas fa-spinner fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.EM_ANDAMENTO|default:0 }}</h4>
+                    <small>Em Andamento</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card revisao">
+                    <i class="fas fa-search fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.REVISAO|default:0 }}</h4>
+                    <small>Em Revisão</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card concluido">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.CONCLUIDO|default:0 }}</h4>
+                    <small>Concluídos</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card" style="background: linear-gradient(135deg, #4361ee, #4895ef);">
+                    <i class="fas fa-layer-group fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.total|default:0 }}</h4>
+                    <small>Total</small>
                 </div>
             </div>
         </div>
@@ -344,6 +536,8 @@
                                     <select class="filter-select" data-column="4">
                                         <option value="">Todos</option>
                                         <option value="Concluído">Concluído</option>
+                                        <option value="Em andamento">Em andamento</option>
+                                        <option value="Revisão">Revisão</option>
                                         <option value="Pendente">Pendente</option>
                                         <option value="Cancelado">Cancelado</option>
                                     </select>
@@ -366,48 +560,173 @@
                                     </div>
                                     <input type="date" class="filter-input" data-column="6">
                                 </th>
+                                <th width="80">
+                                    <div class="filter-header">
+                                        <span>
+                                            <i class="fas fa-history me-1"></i> Histórico
+                                        </span>
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
                             {% for producao in producoes %}
-                            <tr>
+                            <tr data-producao-id="{{ producao.id }}">
                                 <td class="fw-bold text-primary">{{ producao.dc_id }}</td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="user-avatar small">
-                                            {{ producao.projetista.username|first|upper }}
+                                            {% if producao.projetista and producao.projetista.username %}
+                                                {{ producao.projetista.username|first|upper }}
+                                            {% else %}
+                                                ?
+                                            {% endif %}
                                         </div>
-                                        {{ producao.projetista.username }}
+                                        {% if producao.projetista and producao.projetista.username %}
+                                            {{ producao.projetista.username }}
+                                        {% else %}
+                                            <span class="text-muted">Usuário não encontrado</span>
+                                        {% endif %}
                                     </div>
                                 </td>
-                                <td>{{ producao.tipo_projeto }}</td>
                                 <td>
-                                    <span class="badge bg-light text-dark">{{ producao.categoria }}</span>
+                                    {% if producao.tipo_projeto %}
+                                        {{ producao.tipo_projeto.nome }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
                                 </td>
                                 <td>
-                                    {% if producao.status == 'completed' %}
-                                        <span class="status-badge status-completed">
-                                            <i class="fas fa-check-circle me-1"></i>{{ producao.get_status_display }}
-                                        </span>
-                                    {% elif producao.status == 'pending' %}
-                                        <span class="status-badge status-pending">
-                                            <i class="fas fa-clock me-1"></i>{{ producao.get_status_display }}
-                                        </span>
+                                    {% if producao.categoria %}
+                                        <span class="badge bg-light text-dark">{{ producao.categoria.nome }}</span>
                                     {% else %}
-                                        <span class="status-badge status-cancelled">
-                                            <i class="fas fa-times-circle me-1"></i>{{ producao.get_status_display }}
-                                        </span>
+                                        <span class="text-muted">-</span>
                                     {% endif %}
+                                </td>
+                                <td>
+                                    <div>
+                                        {% if producao.status == 'CONCLUIDO' %}
+                                            <span class="status-badge status-completed">
+                                                <i class="fas fa-check-circle me-1"></i>Concluído
+                                            </span>
+                                            {% if producao.data_conclusao and producao.data_inicio %}
+                                                <div class="tempo-conclusao mt-1">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        Tempo: 
+                                                        <span class="tempo-badge">
+                                                            {{ producao.tempo_total.days }}d 
+                                                            {{ producao.tempo_total.seconds|divisibleby:3600|default:0 }}h
+                                                        </span>
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                        {% elif producao.status == 'EM_ANDAMENTO' %}
+                                            <span class="status-badge status-in-progress">
+                                                <i class="fas fa-spinner me-1"></i>Em andamento
+                                            </span>
+                                        {% elif producao.status == 'REVISAO' %}
+                                            <span class="status-badge status-review">
+                                                <i class="fas fa-search me-1"></i>Revisão
+                                            </span>
+                                        {% elif producao.status == 'PENDENTE' %}
+                                            <span class="status-badge status-pending">
+                                                <i class="fas fa-clock me-1"></i>Pendente
+                                            </span>
+                                        {% elif producao.status == 'CANCELADO' %}
+                                            <span class="status-badge status-cancelled">
+                                                <i class="fas fa-times-circle me-1"></i>Cancelado
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                {{ producao.get_status_display|default:"Desconhecido" }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td>{{ producao.motivo_status|default:"-" }}</td>
                                 <td>
                                     <i class="far fa-calendar me-1 text-muted"></i>
                                     {{ producao.data|date:"d/m/Y" }}
                                 </td>
+                                <td class="text-center">
+                                    <button class="historico-toggle" data-bs-toggle="collapse" data-bs-target="#historico-{{ producao.id }}">
+                                        <i class="fas fa-history"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="collapse-row">
+                                <td colspan="9" class="p-0">
+                                    <div class="collapse" id="historico-{{ producao.id }}">
+                                        <div class="p-3 bg-light">
+                                            <h6 class="mb-3">
+                                                <i class="fas fa-stream me-2"></i>
+                                                Histórico de Status - {{ producao.dc_id }}
+                                            </h6>
+                                            
+                                            <!-- Informações de tempo -->
+                                            {% if producao.status == 'CONCLUIDO' and producao.data_conclusao and producao.data_inicio %}
+                                            <div class="alert alert-success mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <strong><i class="fas fa-play-circle me-1"></i>Início:</strong>
+                                                        {{ producao.data_inicio|date:"d/m/Y H:i" }}
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <strong><i class="fas fa-flag-checkered me-1"></i>Conclusão:</strong>
+                                                        {{ producao.data_conclusao|date:"d/m/Y H:i" }}
+                                                    </div>
+                                                </div>
+                                                <div class="row mt-2">
+                                                    <div class="col-12">
+                                                        <strong><i class="fas fa-stopwatch me-1"></i>Tempo Total:</strong>
+                                                        <span class="badge bg-success">
+                                                            {{ producao.tempo_total.days }} dias, 
+                                                            {{ producao.tempo_total.seconds|divisibleby:3600 }} horas
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% if producao.historico.all %}
+                                                <div class="timeline">
+                                                    {% for registro in producao.historico.all %}
+                                                    <div class="timeline-item">
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div>
+                                                                <strong class="d-block">{{ registro.get_status_display }}</strong>
+                                                                <small class="text-muted">{{ registro.motivo|default:"Sem observações" }}</small>
+                                                            </div>
+                                                            <div class="text-end">
+                                                                <small class="text-muted d-block">
+                                                                    {{ registro.data_alteracao|date:"d/m/Y H:i" }}
+                                                                </small>
+                                                                <small class="text-muted">
+                                                                    {% if registro.usuario %}
+                                                                        por {{ registro.usuario.get_full_name|default:registro.usuario.username }}
+                                                                    {% else %}
+                                                                        por Sistema
+                                                                    {% endif %}
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <div class="text-center text-muted py-3">
+                                                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                                                    <p>Nenhum registro no histórico</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="7" class="text-center py-5">
+                                <td colspan="9" class="text-center py-5">
                                     <div class="empty-state">
                                         <i class="fas fa-inbox"></i>
                                         <h4 class="mt-3">Nenhuma produção encontrada</h4>
@@ -435,7 +754,7 @@
             const clearFilters = document.getElementById('clearFilters');
             const resultCount = document.getElementById('resultCount');
             const tableBody = document.getElementById('tableBody');
-            const rows = Array.from(tableBody.getElementsByTagName('tr'));
+            const rows = Array.from(tableBody.querySelectorAll('tr[data-producao-id]'));
             const filterInputs = document.querySelectorAll('.filter-input, .filter-select');
             const sortIcons = document.querySelectorAll('.sort-icon');
             
@@ -456,17 +775,14 @@
                 let visibleCount = 0;
                 
                 rows.forEach(row => {
-                    if (row.cells.length < 7) {
-                        row.style.display = 'none';
-                        return; // Pula a linha de "nenhum resultado"
-                    }
+                    const collapseRow = row.nextElementSibling;
                     
                     let shouldShow = true;
                     
                     // Aplicar filtro global
                     if (globalSearchTerm) {
                         let rowMatches = false;
-                        for (let i = 0; i < row.cells.length; i++) {
+                        for (let i = 0; i < row.cells.length - 1; i++) { // -1 para ignorar a coluna de histórico
                             const cellText = row.cells[i].textContent.toLowerCase();
                             if (cellText.includes(globalSearchTerm)) {
                                 rowMatches = true;
@@ -498,8 +814,12 @@
                         }
                     }
                     
-                    // Mostrar/ocultar linha
+                    // Mostrar/ocultar linha principal e sua linha de histórico
                     row.style.display = shouldShow ? '' : 'none';
+                    if (collapseRow && collapseRow.classList.contains('collapse-row')) {
+                        collapseRow.style.display = shouldShow ? '' : 'none';
+                    }
+                    
                     if (shouldShow) visibleCount++;
                 });
                 
@@ -508,10 +828,11 @@
                 badge.textContent = visibleCount;
                 
                 // Mostrar mensagem se não houver resultados
-                if (visibleCount === 0) {
+                const emptyRow = tableBody.querySelector('tr:not([data-producao-id])');
+                if (visibleCount === 0 && !emptyRow) {
                     const emptyRow = document.createElement('tr');
                     emptyRow.innerHTML = `
-                        <td colspan="7" class="text-center py-5">
+                        <td colspan="9" class="text-center py-5">
                             <div class="empty-state">
                                 <i class="fas fa-search"></i>
                                 <h4 class="mt-3">Nenhum resultado encontrado</h4>
@@ -519,18 +840,9 @@
                             </div>
                         </td>
                     `;
-                    // Remove qualquer mensagem anterior
-                    const existingEmpty = tableBody.querySelector('.empty-state');
-                    if (existingEmpty) {
-                        existingEmpty.closest('tr').remove();
-                    }
                     tableBody.appendChild(emptyRow);
-                } else {
-                    // Remove mensagem de nenhum resultado se houver resultados
-                    const emptyRow = tableBody.querySelector('.empty-state');
-                    if (emptyRow) {
-                        emptyRow.closest('tr').remove();
-                    }
+                } else if (visibleCount > 0 && emptyRow && emptyRow.querySelector('.empty-state')) {
+                    emptyRow.remove();
                 }
             }
             
@@ -586,8 +898,15 @@
                     return 0;
                 });
                 
-                // Reordenar as linhas na tabela
-                visibleRows.forEach(row => tableBody.appendChild(row));
+                // Reordenar as linhas na tabela (incluindo as linhas de histórico)
+                const tableBody = document.getElementById('tableBody');
+                visibleRows.forEach(row => {
+                    const collapseRow = row.nextElementSibling;
+                    tableBody.appendChild(row);
+                    if (collapseRow && collapseRow.classList.contains('collapse-row')) {
+                        tableBody.appendChild(collapseRow);
+                    }
+                });
             }
             
             // Event listeners
@@ -624,95 +943,154 @@
                 applyFilters();
             });
             
+            // Fechar todos os históricos quando clicar em outro
+            document.querySelectorAll('.historico-toggle').forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const target = this.getAttribute('data-bs-target');
+                    document.querySelectorAll('.collapse').forEach(collapse => {
+                        if (collapse.id !== target.substring(1)) {
+                            bootstrap.Collapse.getInstance(collapse)?.hide();
+                        }
+                    });
+                });
+            });
+            
             // Inicializar contador
             applyFilters();
             
-            // Gráfico (para superusers)
-            const ctx = document.getElementById('producaoChart');
-            if (ctx) {
-                const chartLabels = {{ chart_labels|safe }};
-                const chartData = {{ chart_data|safe }};
+            // Gráfico de Status
+            const statusCtx = document.getElementById('statusChart');
+            if (statusCtx) {
+                // Seguir a MESMA ORDEM dos cards: Cancelado, Pendente, Em Andamento, Revisão, Concluído
+                const statusData = {
+                    'Cancelado': {{ stats.CANCELADO|default:0 }},
+                    'Pendente': {{ stats.PENDENTE|default:0 }},
+                    'Em Andamento': {{ stats.EM_ANDAMENTO|default:0 }},
+                    'Revisão': {{ stats.REVISAO|default:0 }},
+                    'Concluído': {{ stats.CONCLUIDO|default:0 }}
+                };
 
+                // Usar as MESMAS CORES dos cards
                 const backgroundColors = [
-                    'rgba(67, 97, 238, 0.7)',
-                    'rgba(76, 201, 240, 0.7)',
-                    'rgba(72, 149, 239, 0.7)',
-                    'rgba(63, 55, 201, 0.7)',
-                    'rgba(247, 37, 133, 0.7)',
-                    'rgba(255, 159, 64, 0.7)',
-                    'rgba(75, 192, 192, 0.7)',
-                    'rgba(153, 102, 255, 0.7)'
+                    'rgba(220, 53, 69, 0.8)',      // Cancelado - Vermelho (igual ao card)
+                    'rgba(253, 126, 20, 0.8)',     // Pendente - Laranja (igual ao card)
+                    'rgba(168, 168, 27, 0.8)',     // Em Andamento - Amarelo (igual ao card)
+                    'rgba(147, 51, 234, 0.8)',     // Revisão - Roxo (igual ao card)
+                    'rgba(17, 147, 34, 0.8)'       // Concluído - Verde (igual ao card)
                 ];
                 
                 const borderColors = [
-                    'rgba(67, 97, 238, 1)',
-                    'rgba(76, 201, 240, 1)',
-                    'rgba(72, 149, 239, 1)',
-                    'rgba(63, 55, 201, 1)',
-                    'rgba(247, 37, 133, 1)',
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)'
+                    'rgba(220, 53, 69, 1)',        // Cancelado
+                    'rgba(253, 126, 20, 1)',       // Pendente
+                    'rgba(168, 168, 27, 1)',       // Em Andamento
+                    'rgba(147, 51, 234, 1)',       // Revisão
+                    'rgba(17, 147, 34, 1)'         // Concluído
                 ];
 
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: chartLabels,
-                        datasets: [{
-                            label: 'Produções Realizadas',
-                            data: chartData,
-                            backgroundColor: backgroundColors,
-                            borderColor: borderColors,
-                            borderWidth: 2,
-                            borderRadius: 8,
-                            borderSkipped: false,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                                titleFont: {
-                                    size: 14
-                                },
-                                bodyFont: {
-                                    size: 13
-                                },
-                                padding: 12,
-                                cornerRadius: 8
-                            }
+                // Verificar se há dados para mostrar
+                const hasData = Object.values(statusData).some(value => value > 0);
+                
+                if (!hasData) {
+                    // Mostrar mensagem se não houver dados
+                    statusCtx.parentElement.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Nenhum dado disponível para o gráfico</h5>
+                            <p class="text-muted">Não há projetos cadastrados com status.</p>
+                        </div>
+                    `;
+                } else {
+                    new Chart(statusCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(statusData),
+                            datasets: [{
+                                label: 'Quantidade de Projetos',
+                                data: Object.values(statusData),
+                                backgroundColor: backgroundColors,
+                                borderColor: borderColors,
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false,
+                            }]
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    drawBorder: false
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
                                 },
-                                ticks: {
-                                    font: {
-                                        size: 12
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                    titleFont: {
+                                        size: 14
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    },
+                                    padding: 12,
+                                    cornerRadius: 8,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const value = context.parsed.y;
+                                            const label = context.label;
+                                            return `${label}: ${value} projeto${value !== 1 ? 's' : ''}`;
+                                        }
                                     }
                                 }
                             },
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    font: {
-                                        size: 12
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        drawBorder: false,
+                                        color: 'rgba(0, 0, 0, 0.1)'
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 12
+                                        },
+                                        precision: 0,
+                                        stepSize: 1
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Quantidade de Projetos',
+                                        font: {
+                                            size: 13,
+                                            weight: 'bold'
+                                        },
+                                        padding: {top: 10, bottom: 10}
                                     }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 12,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                }
+                            },
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeOutQuart'
+                            },
+                            // Melhorar a aparência das barras
+                            elements: {
+                                bar: {
+                                    backgroundColor: backgroundColors,
+                                    borderColor: borderColors,
+                                    borderWidth: 2
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                }
             }
         });
     </script>

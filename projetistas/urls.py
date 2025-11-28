@@ -14,13 +14,19 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+# urls.py (versão simplificada)
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth import views as auth_views
 from projetistas.core import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.home, name='home'),
-    path('change-password/', views.change_password, name='change_password'),
-    path('accounts/', include('django.contrib.auth.urls')),
+    
+    # URLs de autenticação
+    path('login/', views.custom_login, name='login'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
+    path('cadastro/', views.cadastro, name='cadastro'),
+    path('perfil/', views.perfil, name='perfil'),
 ]

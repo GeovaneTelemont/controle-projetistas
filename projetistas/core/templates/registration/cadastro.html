@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Sistema de Produção</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .register-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .register-header {
+            background: linear-gradient(135deg, #4361ee, #4895ef);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .register-body {
+            padding: 2rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4361ee, #4895ef);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-weight: 500;
+        }
+        .form-control {
+            border-radius: 8px;
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #4361ee;
+            box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
+        }
+        .register-logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .password-help {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        .form-text {
+            font-size: 0.8rem;
+        }
+        .error-list {
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="register-container">
+                    <div class="register-header">
+                        <div class="register-logo">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <h2>Criar Nova Conta</h2>
+                        <p class="mb-0">Junte-se ao nosso sistema de produção</p>
+                    </div>
+                    
+                    <div class="register-body">
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_first_name" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Nome
+                                    </label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                        <div class="text-danger error-list">
+                                            {% for error in form.first_name.errors %}
+                                                <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_last_name" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Sobrenome
+                                    </label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                        <div class="text-danger error-list">
+                                            {% for error in form.last_name.errors %}
+                                                <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_username" class="form-label">
+                                    <i class="fas fa-user-tag me-1"></i>Nome de Usuário
+                                </label>
+                                {{ form.username }}
+                                {% if form.username.errors %}
+                                    <div class="text-danger error-list">
+                                        {% for error in form.username.errors %}
+                                            <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Obrigatório. 150 caracteres ou menos. Letras, números e @/./+/-/_ apenas.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_email" class="form-label">
+                                    <i class="fas fa-envelope me-1"></i>Email
+                                </label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger error-list">
+                                        {% for error in form.email.errors %}
+                                            <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_password1" class="form-label">
+                                    <i class="fas fa-lock me-1"></i>Senha
+                                </label>
+                                {{ form.password1 }}
+                                {% if form.password1.errors %}
+                                    <div class="text-danger error-list">
+                                        {% for error in form.password1.errors %}
+                                            <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="password-help">
+                                    <small>
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Sua senha deve conter pelo menos 8 caracteres, não pode ser muito comum e não pode ser apenas numérica.
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="id_password2" class="form-label">
+                                    <i class="fas fa-lock me-1"></i>Confirmar Senha
+                                </label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}
+                                    <div class="text-danger error-list">
+                                        {% for error in form.password2.errors %}
+                                            <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Digite a mesma senha novamente para verificação.</div>
+                            </div>
+                            
+                            <div class="d-grid mb-3">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-user-plus me-2"></i>Criar Conta
+                                </button>
+                            </div>
+                            
+                            <div class="text-center">
+                                <p class="mb-0">
+                                    Já tem uma conta? 
+                                    <a href="{% url 'login' %}" class="text-decoration-none fw-bold">Faça login aqui</a>
+                                </p>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Adicionar placeholders aos campos
+        document.addEventListener('DOMContentLoaded', function() {
+            // Adicionar placeholders
+            const fields = {
+                'id_first_name': 'Digite seu nome',
+                'id_last_name': 'Digite seu sobrenome', 
+                'id_username': 'Escolha um nome de usuário',
+                'id_email': 'seu@email.com',
+                'id_password1': 'Crie uma senha segura',
+                'id_password2': 'Repita a senha'
+            };
+            
+            for (const [id, placeholder] of Object.entries(fields)) {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.placeholder = placeholder;
+                }
+            }
+            
+            // Adicionar validação em tempo real
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
