@@ -4,8 +4,8 @@ __pycache__/
 *.pyo
 *.pyd
 poetry.lock
-
 # Ambientes Virtuais
+migrations/
 venv/
 env/
 .venv/
