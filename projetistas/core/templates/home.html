@@ -6,68 +6,414 @@
     <title>Controle de Produção de Projetistas</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4895ef;
+            --light-color: #f8f9fa;
+            --success-color: #4cc9f0;
+            --warning-color: #f72585;
+        }
+        
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+        
+        .table th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .table th .filter-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem;
+        }
+        
+        .table th .filter-input {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            color: white;
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+            margin-top: 0.5rem;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .table th .filter-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .table th .filter-input:focus {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+        }
+        
+        .table th .filter-select {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            color: white;
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+            margin-top: 0.5rem;
+            width: 100%;
+        }
+        
+        .table td {
+            padding: 0.85rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .status-badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-completed {
+            background-color: rgba(76, 201, 240, 0.15);
+            color: #0d6efd;
+        }
+        
+        .status-pending {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: #fd7e14;
+        }
+        
+        .status-cancelled {
+            background-color: rgba(247, 37, 133, 0.15);
+            color: #dc3545;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 500;
+        }
+        
+        .btn-danger {
+            border-radius: 8px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 500;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 350px;
+            padding: 1rem;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #dee2e6;
+        }
+        
+        .filter-controls {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .filter-badge {
+            background: #4361ee;
+            color: white;
+            border-radius: 20px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+        }
+        
+        .sort-icon {
+            cursor: pointer;
+            margin-left: 5px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sort-icon:hover {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
 
     <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded">
+        <div class="header-section d-flex justify-content-between align-items-center mb-4">
             {% if user.is_authenticated %}
-                <h1 class="h3">Olá, {{ user.get_full_name|default:user.username }}!</h1>
-                <a href="{% url 'logout' %}" class="btn btn-danger">Sair</a>
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ user.get_full_name|default:user.username|first|upper }}
+                    </div>
+                    <div>
+                        <h1 class="h4 mb-0">Olá, {{ user.get_full_name|default:user.username }}!</h1>
+                        <p class="mb-0 opacity-75">Bem-vindo ao sistema de produção</p>
+                    </div>
+                </div>
+                <a href="{% url 'logout' %}" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt me-2"></i>Sair
+                </a>
             {% else %}
-                <h1 class="h3">Produção de Projetos</h1>
-                <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+                <div>
+                    <h1 class="h4 mb-0">Produção de Projetos</h1>
+                    <p class="mb-0 opacity-75">Sistema de controle de produção</p>
+                </div>
+                <a href="{% url 'login' %}" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </a>
             {% endif %}
         </div>
 
         {# Se o usuário for um superuser, mostra o gráfico #}
         {% if user.is_authenticated and user.is_superuser %}
         <div class="card mb-4">
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center">
+                <i class="fas fa-chart-bar me-2"></i>
                 Gráfico de Produção por Projetista
             </div>
-            <div class="card-body">
-                <canvas id="producaoChart"></canvas>
+            <div class="card-body p-0">
+                <div class="chart-container">
+                    <canvas id="producaoChart"></canvas>
+                </div>
             </div>
         </div>
         {% endif %}
 
+        <!-- Controles de Filtro -->
+        <div class="filter-controls">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                        <input type="text" id="globalSearch" class="form-control" placeholder="Buscar em todos os campos...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <span id="resultCount" class="text-muted">Mostrando <span class="filter-badge">0</span> resultados</span>
+                </div>
+                <div class="col-md-2 text-end">
+                    <button id="clearFilters" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-eraser me-1"></i>Limpar Filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center">
+                <i class="fas fa-table me-2"></i>
                 {% if user.is_authenticated and not user.is_superuser %}
-                    <h2 class="h5 mb-0">Suas Produções</h2>
+                    Suas Produções
                 {% else %}
-                    <h2 class="h5 mb-0">Todas as Produções</h2>
+                    Todas as Produções
                 {% endif %}
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="table-dark">
+                    <table class="table table-hover mb-0" id="productionTable">
+                        <thead>
                             <tr>
-                                <th>DC/ID</th>
-                                <th>Projetista</th>
-                                <th>Tipo de Projeto</th>
-                                <th>Categoria</th>
-                                <th>Status</th>
-                                <th>Motivo</th>
-                                <th>Data</th>
+                                <th>
+                                    <div class="filter-header">
+                                        <span>
+                                            <i class="fas fa-hashtag me-1"></i> DC/ID
+                                            <i class="fas fa-sort sort-icon" data-column="0"></i>
+                                        </span>
+                                    </div>
+                                    <input type="text" class="filter-input" data-column="0" placeholder="Filtrar ID...">
+                                </th>
+                                <th>
+                                    <div class="filter-header">
+                                        <span>
+                                            <i class="fas fa-user me-1"></i> Projetista
+                                            <i class="fas fa-sort sort-icon" data-column="1"></i>
+                                        </span>
+                                    </div>
+                                    <input type="text" class="filter-input" data-column="1" placeholder="Filtrar nome...">
+                                </th>
+                                <th>
+                                    <div class="filter-header">
+                                        <span>
+                                            <i class="fas fa-project-diagram me-1"></i> Tipo de Projeto
+                                            <i class="fas fa-sort sort-icon" data-column="2"></i>
+                                        </span>
+                                    </div>
+                                    <select class="filter-select" data-column="2">
+                                        <option value="">Todos</option>
+                                        <option value="Residencial">Residencial</option>
+                                        <option value="Comercial">Comercial</option>
+                                        <option value="Industrial">Industrial</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <div class="filter-header">
+                                        <span>
+                                            <i class="fas fa-tags me-1"></i> Categoria
+                                            <i class="fas fa-sort sort-icon" data-column="3"></i>
+                                        </span>
+                                    </div>
+                                    <select class="filter-select" data-column="3">
+                                        <option value="">Todas</option>
+                                        <option value="Elétrico">Elétrico</option>
+                                        <option value="Hidráulico">Hidráulico</option>
+                                        <option value="Estrutural">Estrutural</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <div class="filter-header">
+                                        <span>
+                                            <i class="fas fa-tasks me-1"></i> Status
+                                            <i class="fas fa-sort sort-icon" data-column="4"></i>
+                                        </span>
+                                    </div>
+                                    <select class="filter-select" data-column="4">
+                                        <option value="">Todos</option>
+                                        <option value="Concluído">Concluído</option>
+                                        <option value="Pendente">Pendente</option>
+                                        <option value="Cancelado">Cancelado</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <div class="filter-header">
+                                        <span>
+                                            <i class="fas fa-comment me-1"></i> Motivo
+                                            <i class="fas fa-sort sort-icon" data-column="5"></i>
+                                        </span>
+                                    </div>
+                                    <input type="text" class="filter-input" data-column="5" placeholder="Filtrar motivo...">
+                                </th>
+                                <th>
+                                    <div class="filter-header">
+                                        <span>
+                                            <i class="fas fa-calendar me-1"></i> Data
+                                            <i class="fas fa-sort sort-icon" data-column="6"></i>
+                                        </span>
+                                    </div>
+                                    <input type="date" class="filter-input" data-column="6">
+                                </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="tableBody">
                             {% for producao in producoes %}
                             <tr>
-                                <td>{{ producao.dc_id }}</td>
-                                <td>{{ producao.projetista.username }}</td>
+                                <td class="fw-bold text-primary">{{ producao.dc_id }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar small">
+                                            {{ producao.projetista.username|first|upper }}
+                                        </div>
+                                        {{ producao.projetista.username }}
+                                    </div>
+                                </td>
                                 <td>{{ producao.tipo_projeto }}</td>
-                                <td>{{ producao.categoria }}</td>
-                                <td>{{ producao.get_status_display }}</td>
-                                <td>{{ producao.motivo_status }}</td>
-                                <td>{{ producao.data|date:"d/m/Y" }}</td>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ producao.categoria }}</span>
+                                </td>
+                                <td>
+                                    {% if producao.status == 'completed' %}
+                                        <span class="status-badge status-completed">
+                                            <i class="fas fa-check-circle me-1"></i>{{ producao.get_status_display }}
+                                        </span>
+                                    {% elif producao.status == 'pending' %}
+                                        <span class="status-badge status-pending">
+                                            <i class="fas fa-clock me-1"></i>{{ producao.get_status_display }}
+                                        </span>
+                                    {% else %}
+                                        <span class="status-badge status-cancelled">
+                                            <i class="fas fa-times-circle me-1"></i>{{ producao.get_status_display }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ producao.motivo_status|default:"-" }}</td>
+                                <td>
+                                    <i class="far fa-calendar me-1 text-muted"></i>
+                                    {{ producao.data|date:"d/m/Y" }}
+                                </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="7" class="text-center">Nenhuma produção encontrada.</td>
+                                <td colspan="7" class="text-center py-5">
+                                    <div class="empty-state">
+                                        <i class="fas fa-inbox"></i>
+                                        <h4 class="mt-3">Nenhuma produção encontrada</h4>
+                                        <p class="text-muted">Não há registros de produção para exibir no momento.</p>
+                                    </div>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -83,36 +429,292 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <script>
-        // Este script só será executado se o gráfico existir na página (para superusers)
-        const ctx = document.getElementById('producaoChart');
-        if (ctx) {
-            // Os dados 'chart_labels' e 'chart_data' devem ser passados pelo seu view do Django.
-            // Exemplo: context['chart_labels'] = ['Projetista A', 'Projetista B']
-            //          context['chart_data'] = [10, 15]
-            const chartLabels = {{ chart_labels|safe }};
-            const chartData = {{ chart_data|safe }};
-
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: chartLabels,
-                    datasets: [{
-                        label: '# de Produções',
-                        data: chartData,
-                        backgroundColor: 'rgba(0, 123, 255, 0.5)',
-                        borderColor: 'rgba(0, 123, 255, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
+        // Sistema de Filtros e Ordenação
+        document.addEventListener('DOMContentLoaded', function() {
+            const globalSearch = document.getElementById('globalSearch');
+            const clearFilters = document.getElementById('clearFilters');
+            const resultCount = document.getElementById('resultCount');
+            const tableBody = document.getElementById('tableBody');
+            const rows = Array.from(tableBody.getElementsByTagName('tr'));
+            const filterInputs = document.querySelectorAll('.filter-input, .filter-select');
+            const sortIcons = document.querySelectorAll('.sort-icon');
+            
+            let currentSortColumn = -1;
+            let currentSortDirection = 'asc';
+            
+            // Função para aplicar filtros
+            function applyFilters() {
+                const globalSearchTerm = globalSearch.value.toLowerCase();
+                const columnFilters = {};
+                
+                // Coletar filtros de coluna
+                filterInputs.forEach(input => {
+                    const columnIndex = parseInt(input.getAttribute('data-column'));
+                    columnFilters[columnIndex] = input.value.toLowerCase();
+                });
+                
+                let visibleCount = 0;
+                
+                rows.forEach(row => {
+                    if (row.cells.length < 7) {
+                        row.style.display = 'none';
+                        return; // Pula a linha de "nenhum resultado"
+                    }
+                    
+                    let shouldShow = true;
+                    
+                    // Aplicar filtro global
+                    if (globalSearchTerm) {
+                        let rowMatches = false;
+                        for (let i = 0; i < row.cells.length; i++) {
+                            const cellText = row.cells[i].textContent.toLowerCase();
+                            if (cellText.includes(globalSearchTerm)) {
+                                rowMatches = true;
+                                break;
+                            }
+                        }
+                        if (!rowMatches) {
+                            shouldShow = false;
                         }
                     }
+                    
+                    // Aplicar filtros de coluna
+                    for (const [columnIndex, filterValue] of Object.entries(columnFilters)) {
+                        if (filterValue && shouldShow) {
+                            const cell = row.cells[columnIndex];
+                            let cellText = cell.textContent.toLowerCase();
+                            
+                            // Para células com elementos internos (como badges)
+                            if (cell.querySelector('.status-badge')) {
+                                cellText = cell.querySelector('.status-badge').textContent.toLowerCase();
+                            } else if (cell.querySelector('.badge')) {
+                                cellText = cell.querySelector('.badge').textContent.toLowerCase();
+                            }
+                            
+                            if (!cellText.includes(filterValue)) {
+                                shouldShow = false;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Mostrar/ocultar linha
+                    row.style.display = shouldShow ? '' : 'none';
+                    if (shouldShow) visibleCount++;
+                });
+                
+                // Atualizar contador
+                const badge = resultCount.querySelector('.filter-badge');
+                badge.textContent = visibleCount;
+                
+                // Mostrar mensagem se não houver resultados
+                if (visibleCount === 0) {
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.innerHTML = `
+                        <td colspan="7" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-search"></i>
+                                <h4 class="mt-3">Nenhum resultado encontrado</h4>
+                                <p class="text-muted">Tente ajustar os filtros para ver mais resultados.</p>
+                            </div>
+                        </td>
+                    `;
+                    // Remove qualquer mensagem anterior
+                    const existingEmpty = tableBody.querySelector('.empty-state');
+                    if (existingEmpty) {
+                        existingEmpty.closest('tr').remove();
+                    }
+                    tableBody.appendChild(emptyRow);
+                } else {
+                    // Remove mensagem de nenhum resultado se houver resultados
+                    const emptyRow = tableBody.querySelector('.empty-state');
+                    if (emptyRow) {
+                        emptyRow.closest('tr').remove();
+                    }
                 }
+            }
+            
+            // Função para ordenar a tabela
+            function sortTable(columnIndex) {
+                // Determinar direção da ordenação
+                if (currentSortColumn === columnIndex) {
+                    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortColumn = columnIndex;
+                    currentSortDirection = 'asc';
+                }
+                
+                // Atualizar ícones de ordenação
+                sortIcons.forEach(icon => {
+                    icon.className = 'fas fa-sort sort-icon';
+                });
+                const currentIcon = document.querySelector(`.sort-icon[data-column="${columnIndex}"]`);
+                currentIcon.className = `fas fa-sort-${currentSortDirection === 'asc' ? 'up' : 'down'} sort-icon`;
+                
+                // Ordenar linhas
+                const visibleRows = rows.filter(row => row.style.display !== 'none');
+                
+                visibleRows.sort((a, b) => {
+                    let aValue = a.cells[columnIndex].textContent.trim();
+                    let bValue = b.cells[columnIndex].textContent.trim();
+                    
+                    // Para células com elementos internos
+                    if (a.cells[columnIndex].querySelector('.status-badge')) {
+                        aValue = a.cells[columnIndex].querySelector('.status-badge').textContent.trim();
+                        bValue = b.cells[columnIndex].querySelector('.status-badge').textContent.trim();
+                    } else if (a.cells[columnIndex].querySelector('.badge')) {
+                        aValue = a.cells[columnIndex].querySelector('.badge').textContent.trim();
+                        bValue = b.cells[columnIndex].querySelector('.badge').textContent.trim();
+                    }
+                    
+                    // Converter para números se possível
+                    if (!isNaN(aValue) && !isNaN(bValue)) {
+                        aValue = parseFloat(aValue);
+                        bValue = parseFloat(bValue);
+                    }
+                    
+                    // Converter datas se possível
+                    if (columnIndex === 6) { // Coluna de data
+                        const [aDay, aMonth, aYear] = aValue.split('/');
+                        const [bDay, bMonth, bYear] = bValue.split('/');
+                        aValue = new Date(aYear, aMonth - 1, aDay);
+                        bValue = new Date(bYear, bMonth - 1, bDay);
+                    }
+                    
+                    if (aValue < bValue) return currentSortDirection === 'asc' ? -1 : 1;
+                    if (aValue > bValue) return currentSortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                
+                // Reordenar as linhas na tabela
+                visibleRows.forEach(row => tableBody.appendChild(row));
+            }
+            
+            // Event listeners
+            globalSearch.addEventListener('input', applyFilters);
+            
+            filterInputs.forEach(input => {
+                input.addEventListener('input', applyFilters);
             });
-        }
+            
+            sortIcons.forEach(icon => {
+                icon.addEventListener('click', function() {
+                    const columnIndex = parseInt(this.getAttribute('data-column'));
+                    sortTable(columnIndex);
+                });
+            });
+            
+            clearFilters.addEventListener('click', function() {
+                globalSearch.value = '';
+                filterInputs.forEach(input => {
+                    if (input.type === 'text' || input.type === 'date') {
+                        input.value = '';
+                    } else if (input.tagName === 'SELECT') {
+                        input.selectedIndex = 0;
+                    }
+                });
+                
+                // Resetar ordenação
+                currentSortColumn = -1;
+                currentSortDirection = 'asc';
+                sortIcons.forEach(icon => {
+                    icon.className = 'fas fa-sort sort-icon';
+                });
+                
+                applyFilters();
+            });
+            
+            // Inicializar contador
+            applyFilters();
+            
+            // Gráfico (para superusers)
+            const ctx = document.getElementById('producaoChart');
+            if (ctx) {
+                const chartLabels = {{ chart_labels|safe }};
+                const chartData = {{ chart_data|safe }};
+
+                const backgroundColors = [
+                    'rgba(67, 97, 238, 0.7)',
+                    'rgba(76, 201, 240, 0.7)',
+                    'rgba(72, 149, 239, 0.7)',
+                    'rgba(63, 55, 201, 0.7)',
+                    'rgba(247, 37, 133, 0.7)',
+                    'rgba(255, 159, 64, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ];
+                
+                const borderColors = [
+                    'rgba(67, 97, 238, 1)',
+                    'rgba(76, 201, 240, 1)',
+                    'rgba(72, 149, 239, 1)',
+                    'rgba(63, 55, 201, 1)',
+                    'rgba(247, 37, 133, 1)',
+                    'rgba(255, 159, 64, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ];
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'Produções Realizadas',
+                            data: chartData,
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                titleFont: {
+                                    size: 14
+                                },
+                                bodyFont: {
+                                    size: 13
+                                },
+                                padding: 12,
+                                cornerRadius: 8
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
     </script>
 
 </body>

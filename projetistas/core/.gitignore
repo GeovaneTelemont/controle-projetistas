@@ -1,0 +1,54 @@
+# Arquivos de Bytecode e Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de cache do Mypy
+.mypy_cache/
+
+# Arquivos de log
+*.log
+
+# Arquivos de banco de dados
+db.sqlite3
+db.sqlite3-journal
+
+# Ambientes virtuais
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Arquivos de configuração local (não devem ir para o repositório)
+local_settings.py
+
+# Arquivos de mídia e estáticos coletados
+/media/
+/staticfiles/
+
+# Relatórios de teste e cobertura
+.coverage
+.coverage.*
+.cache
+htmlcov/
+
+# Configurações de IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Pacotes e distribuição
+build/
+dist/
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
