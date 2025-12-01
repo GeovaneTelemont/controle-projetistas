@@ -1,14 +1,21 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
-from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Count
 from .models import Producao
-from .forms import CustomUserCreationForm, UserUpdateForm, ProfileUpdateForm
-# views.py
+from .forms import CustomUserCreationForm
 from django.contrib.auth import logout
 from django.contrib import messages
+from django import template
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
+from django.contrib.auth import logout
+from django.contrib.auth import update_session_auth_hash
+from .models import Producao, TipoProjeto, Categoria
+
+# Mantenha suas outras views como estão (custom_logout, custom_login, cadastro, home)
+
+register = template.Library()
 
 def custom_logout(request):
     """
@@ -68,20 +75,7 @@ def cadastro(request):
     
     return render(request, 'registration/cadastro.html', {'form': form})
 
-# core/views.py
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.db.models import Count
-from django.contrib.auth import logout
-from django.contrib.auth import update_session_auth_hash
-from django.db import transaction
-from .models import Producao, TipoProjeto, Categoria, Profile
-from django.contrib.auth.models import User
 
-# Mantenha suas outras views como estão (custom_logout, custom_login, cadastro, home)
 
 @login_required
 def perfil(request):
@@ -237,3 +231,16 @@ def home(request):
     }
 
     return render(request, 'home.html', context)
+
+
+@register.filter
+def calcular_percentual(valor, total):
+    """Calcula o percentual de um valor em relação ao total"""
+    if total and total > 0:
+        return (valor / total) * 100
+    return 0
+
+@register.filter
+def get_item(dictionary, key):
+    """Retorna um item de um dicionário pela chave"""
+    return dictionary.get(key, 0) 
