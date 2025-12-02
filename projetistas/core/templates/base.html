@@ -33,10 +33,11 @@
                       <div>
                           {% if user.is_authenticated %}
                               <h1 class="h4 mb-0">Olá, {{ user.get_full_name|default:user.username }}!</h1>
+                              <p class="mb-0 opacity-75">{{user.email}}</p>
                           {% else %}
                               <h1 class="h4 mb-0">Painel de Produção</h1>
+                              <p class="mb-0 opacity-75">Sistema de controle de produção de projetos</p>
                           {% endif %}
-                          <p class="mb-0 opacity-75">Sistema de controle de produção de projetos</p>
                       </div>
                     </a>
                   </div>
@@ -72,9 +73,9 @@
                       {% endif %}
                       <!-- Botão para exportar relatório -->
                       {% if user.is_superuser %}
-                      <button class="btn export-btn" onclick="exportToExcel()">
-                          <i class="fas fa-file-excel me-2"></i>Exportar Relatório
-                      </button>
+                      <a class="btn export-btn" href="{% url 'exportar_excel' %}">
+                        <i class="fas fa-file-excel me-2"></i>Exportar Relatório</a>
+                      
                       {% endif %}
                   </div>
               </div>

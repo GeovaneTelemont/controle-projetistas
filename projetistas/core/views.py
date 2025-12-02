@@ -12,10 +12,230 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth import logout
 from django.contrib.auth import update_session_auth_hash
 from .models import Producao, TipoProjeto, Categoria
-
+from django.utils import timezone
 # Mantenha suas outras views como estão (custom_logout, custom_login, cadastro, home)
 
 register = template.Library()
+
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from datetime import datetime, timedelta
+from decimal import Decimal
+
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from datetime import datetime
+from django.utils import timezone
+
+# Adicione esta função junto com suas outras views
+def exportar_excel(request):
+    """
+    View para exportar relatório em Excel com tempo formatado em dias, horas e tempo total
+    """
+    if not request.user.is_superuser:
+        return HttpResponse('Acesso negado', status=403)
+    
+    # Obter filtros da query string
+    data_inicio = request.GET.get('data_inicio')
+    data_fim = request.GET.get('data_fim')
+    projetista_id = request.GET.get('projetista')
+    status = request.GET.get('status')
+    
+    # Query base - importe o modelo Producao se necessário
+    from .models import Producao  # Ajuste conforme a localização do seu modelo
+    
+    queryset = Producao.objects.all().select_related(
+        'projetista', 'tipo_projeto', 'categoria'
+    ).prefetch_related('historico')
+    
+    # Aplicar filtros
+    if data_inicio:
+        queryset = queryset.filter(data__gte=data_inicio)
+    if data_fim:
+        queryset = queryset.filter(data__lte=data_fim)
+    if projetista_id:
+        queryset = queryset.filter(projetista_id=projetista_id)
+    if status:
+        queryset = queryset.filter(status=status)
+    
+    # Ordenar por projetista e data
+    queryset = queryset.order_by('projetista__username', '-data')
+    
+    # Criar workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Produção por Projetista"
+    
+    # Definir estilos
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_font = Font(name='Arial', size=11, bold=True, color="FFFFFF")
+    header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    
+    body_font = Font(name='Arial', size=10)
+    body_alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    center_alignment = Alignment(horizontal="center", vertical="center")
+    
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Função para calcular e formatar tempo
+    def calcular_tempo_formatado(data_inicio, data_fim):
+        """
+        Retorna (dias, horas_minutos, tempo_total)
+        Ex: (2, "05:30", "2 dias 05:30")
+        """
+        if not data_inicio or not data_fim:
+            return (0, "00:00", "")
+        
+        # Calcular diferença em segundos
+        delta = data_fim - data_inicio
+        segundos_totais = delta.total_seconds()
+        
+        # Calcular dias inteiros
+        dias = int(segundos_totais // (24 * 3600))
+        
+        # Calcular horas e minutos restantes
+        segundos_restantes = segundos_totais % (24 * 3600)
+        horas = int(segundos_restantes // 3600)
+        minutos = int((segundos_restantes % 3600) // 60)
+        
+        # Formatar horas:minutos
+        horas_minutos = f"{horas:02d}:{minutos:02d}"
+        
+        # Formatar tempo total
+        if dias > 0:
+            tempo_total = f"{dias} dia(s) {horas:02d}:{minutos:02d}"
+        else:
+            tempo_total = f"{horas:02d}:{minutos:02d}"
+        
+        return (dias, horas_minutos, tempo_total)
+    
+    # Cabeçalhos
+    headers = [
+        'DC/ID',                    # 1
+        'Projetista',               # 2
+        'Tipo de Projeto',          # 3
+        'Categoria',                # 4
+        'Status',                   # 5
+        'Motivo do Status',         # 6
+        'Metragem (m)',             # 7
+        'Data do Projeto',          # 8
+        'Data/Hora Início',         # 9
+        'Data/Hora Término',        # 10
+        'DIAS',                     # 11
+        'HORAS',                    # 12
+        'TEMPO TOTAL',              # 13
+        'Observações Gerais'        # 14
+    ]
+    
+    # Adicionar cabeçalhos
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+        cell.border = thin_border
+    
+    # Preencher dados
+    row_num = 2
+    for producao in queryset:
+        # Determinar data de término baseado no status
+        data_termino = None
+        
+        if producao.status == 'CONCLUIDO':
+            data_termino = producao.data_conclusao
+        elif producao.status == 'CANCELADO':
+            data_termino = producao.data_cancelamento
+        
+        # Calcular tempo se tiver data de término
+        dias = 0
+        horas_minutos = "00:00"
+        tempo_total_str = ""
+        
+        if data_termino:
+            dias, horas_minutos, tempo_total_str = calcular_tempo_formatado(
+                producao.data_inicio, 
+                data_termino
+            )
+        
+        # Determinar texto da data de término
+        if producao.status == 'CONCLUIDO':
+            data_termino_str = producao.data_conclusao.strftime('%d/%m/%Y %H:%M') if producao.data_conclusao else ''
+        elif producao.status == 'CANCELADO':
+            data_termino_str = producao.data_cancelamento.strftime('%d/%m/%Y %H:%M') if producao.data_cancelamento else ''
+        else:
+            data_termino_str = 'EM ANDAMENTO'
+        
+        # Dados da linha
+        row_data = [
+            producao.dc_id,
+            producao.projetista.get_full_name() or producao.projetista.username,
+            producao.tipo_projeto.nome if producao.tipo_projeto else '',
+            producao.categoria.nome if producao.categoria else '',
+            producao.get_status_display(),
+            producao.motivo_status or '',
+            float(producao.metragem_cabo) if producao.metragem_cabo else 0.0,
+            producao.data.strftime('%d/%m/%Y') if producao.data else '',
+            producao.data_inicio.strftime('%d/%m/%Y %H:%M') if producao.data_inicio else '',
+            data_termino_str,
+            dias,
+            horas_minutos,
+            tempo_total_str,
+            producao.observacoes or ''
+        ]
+        
+        # Adicionar linha
+        for col_num, cell_value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_num, column=col_num, value=cell_value)
+            cell.font = body_font
+            cell.border = thin_border
+            
+            # Alinhamentos
+            if col_num in [8, 9, 10, 11, 12, 13]:
+                cell.alignment = center_alignment
+            elif col_num in [5, 7]:
+                cell.alignment = center_alignment
+            else:
+                cell.alignment = body_alignment
+            
+            # Formatar números
+            if col_num == 7:
+                cell.number_format = '#,##0.00'
+            elif col_num == 11:
+                cell.number_format = '0'
+        
+        row_num += 1
+    
+    # Ajustar larguras das colunas
+    column_widths = {
+        'A': 12, 'B': 20, 'C': 20, 'D': 15, 'E': 15,
+        'F': 25, 'G': 12, 'H': 12, 'I': 18, 'J': 18,
+        'K': 8, 'L': 10, 'M': 20, 'N': 40
+    }
+    
+    for col_letter, width in column_widths.items():
+        ws.column_dimensions[col_letter].width = width
+    
+    # Congelar painel
+    ws.freeze_panes = 'A2'
+    
+    # Criar resposta HTTP
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f'producao_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb.save(response)
+    return response
 
 def custom_logout(request):
     """
