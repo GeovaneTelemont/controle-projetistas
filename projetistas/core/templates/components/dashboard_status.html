@@ -1,0 +1,60 @@
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/dashboard_status.css' %}">
+{% endblock %}
+{% block content %}
+<!-- Cards de Estatísticas Rápidas com título agrupado -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-chart-pie me-2"></i>
+        Status Gerais
+        <small class="ms-2 opacity-75">(Resumo de todos os projetos)</small>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card cancelado">
+                    <i class="fas fa-times-circle fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.CANCELADO|default:0 }}</h4>
+                    <small>Cancelados</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card pendente">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.PENDENTE|default:0 }}</h4>
+                    <small>Pendentes</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card andamento">
+                    <i class="fas fa-spinner fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.EM_ANDAMENTO|default:0 }}</h4>
+                    <small>Em Andamento</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card revisao">
+                    <i class="fas fa-search fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.REVISAO|default:0 }}</h4>
+                    <small>Em Revisão</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card concluido">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.CONCLUIDO|default:0 }}</h4>
+                    <small>Concluídos</small>
+                </div>
+            </div>
+            <div class="col-md-2 col-6 mb-3">
+                <div class="stats-card" style="background: linear-gradient(135deg, #4361ee, #4895ef);">
+                    <i class="fas fa-layer-group fa-2x mb-2"></i>
+                    <h4 class="mb-1">{{ stats.total|default:0 }}</h4>
+                    <small>Total de Projetos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

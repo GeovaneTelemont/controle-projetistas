@@ -1,0 +1,26 @@
+{% load static %}
+<div class="user-info">
+    <a href="{% url 'home' %}" class="d-flex align-items-center text-decoration-none text-white">
+        <div class="user-avatar me-3">
+            {% if user.is_authenticated %}
+                <span class="avatar-circle ">
+                    {{ user.get_full_name|default:user.username|first|upper }}
+                </span>
+            {% else %}
+                <span class="avatar-circle bg-primary text-white">
+                    <i class="fas fa-chart-line"></i>
+                </span>
+            {% endif %}
+        </div>
+        
+        <div class="text">
+            {% if user.is_authenticated %}
+                <h1 class="h5 mb-0 fw-bold">Olá, {{ user.get_full_name|default:user.username }}!</h1>
+                <small class="text-muted">{{ user.email }}</small>
+            {% else %}
+                <h1 class="h5 mb-0 fw-bold">Painel de Produção</h1>
+                <small class="text-muted">Sistema de controle de produção</small>
+            {% endif %}
+        </div>
+    </a>
+</div>

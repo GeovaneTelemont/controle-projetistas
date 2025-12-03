@@ -1,0 +1,49 @@
+{% load static %}
+<footer class="footer mt-5 py-4 bg-dark text-white ">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-chart-line fa-2x text-primary me-2"></i>
+                    <h5 class="mb-0">ProdManager</h5>
+                </div>
+                <p class="text-light mb-0">
+                    Sistema de gestão de produção industrial.
+                    Controle total sobre seus projetos e processos.
+                </p>
+            </div>
+            
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <h5 class="mb-3">Links Rápidos</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="{% url 'home' %}" class="text-light text-decoration-none"><i class="fas fa-chevron-right me-2"></i>Dashboard</a></li>
+                    <li class="mb-2"><a href="#" class="text-light text-decoration-none"><i class="fas fa-chevron-right me-2"></i>Documentação</a></li>
+                    <li class="mb-2"><a href="#" class="text-light text-decoration-none"><i class="fas fa-chevron-right me-2"></i>Suporte</a></li>
+                </ul>
+            </div>
+            
+            <div class="col-lg-4">
+                <h5 class="mb-3">Contato</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><i class="fas fa-envelope me-2"></i>Corporativo: geovane.carvalho@telemont.com.br</li>
+                    <li class="mb-2"><i class="fas fa-envelope me-2"></i>Pessoal: geovanehacker.io@gmail.com</li>
+                    <li class="mb-2"><i class="fas fa-phone me-2"></i>(61) 99548-8068</li>
+                    <li><i class="fas fa-map-marker-alt me-2"></i>Brasília, DF</li>
+                </ul>
+            </div>
+        </div>
+        
+        <hr class="my-4 border-secondary">
+        
+        <div class="row align-items-center">
+            <div class="col-md-6 text-center text-md-start">
+                <p class="mb-0">&copy; {% now "Y" %} ProdManager Telemont System. 📌Created by Geovane Carvalho .</p>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <div class="d-flex justify-content-center justify-content-md-end gap-3">
+                    <a href="https://github.com/GeovaneTelemont?tab=repositories" target=_blank class="text-light"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>

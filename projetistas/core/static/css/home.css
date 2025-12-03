@@ -192,7 +192,7 @@ body.logged-in .welcome-jumbotron {
 
 .status-completed {
     background-color: rgba(76, 201, 240, 0.15);
-    color: #0d6efd;
+    color: #0ac256;
 }
 
 .status-pending {
@@ -207,7 +207,7 @@ body.logged-in .welcome-jumbotron {
 
 .status-in-progress {
     background-color: rgba(32, 201, 151, 0.15);
-    color: #20a362;
+    color: #adbd1b;
 }
 
 .status-review {

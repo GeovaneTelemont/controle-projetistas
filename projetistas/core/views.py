@@ -416,14 +416,51 @@ def perfil(request):
     
     return render(request, 'registration/perfil.html', context)
 
+from django.db.models import Count, Q
+from django.shortcuts import render
+from .models import Producao, TipoProjeto, User
+from datetime import datetime
+
 def home(request):
     """
     View para a página inicial.
     """
-    if request.user.is_authenticated and not request.user.is_superuser:
-        producoes = Producao.objects.filter(projetista=request.user).order_by('-data')
+    # Obter parâmetro de filtro de data
+    data_filtro = request.GET.get('data_filtro')
+    
+    # Base query com filtro de data se existir
+    if data_filtro:
+        try:
+            data_filtro_obj = datetime.strptime(data_filtro, '%Y-%m-%d').date()
+            if request.user.is_authenticated and not request.user.is_superuser:
+                producoes = Producao.objects.filter(
+                    projetista=request.user,
+                    data=data_filtro_obj
+                ).order_by('-data')
+                base_query = Producao.objects.filter(
+                    projetista=request.user,
+                    data=data_filtro_obj
+                )
+            else:
+                producoes = Producao.objects.filter(
+                    data=data_filtro_obj
+                ).order_by('-data')
+                base_query = Producao.objects.filter(data=data_filtro_obj)
+        except ValueError:
+            # Data inválida, usar sem filtro
+            if request.user.is_authenticated and not request.user.is_superuser:
+                producoes = Producao.objects.filter(projetista=request.user).order_by('-data')
+                base_query = Producao.objects.filter(projetista=request.user)
+            else:
+                producoes = Producao.objects.all().order_by('-data')
+                base_query = Producao.objects.all()
     else:
-        producoes = Producao.objects.all().order_by('-data')
+        if request.user.is_authenticated and not request.user.is_superuser:
+            producoes = Producao.objects.filter(projetista=request.user).order_by('-data')
+            base_query = Producao.objects.filter(projetista=request.user)
+        else:
+            producoes = Producao.objects.all().order_by('-data')
+            base_query = Producao.objects.all()
 
     # Cálculo das estatísticas
     stats_query = producoes.values('status').annotate(total=Count('id'))
@@ -445,9 +482,80 @@ def home(request):
         'projetista', 'tipo_projeto', 'categoria'
     ).prefetch_related('historico')
 
+    # DADOS PARA A TABELA DE PROJETISTAS POR TIPO
+    # Buscar todos os tipos de projeto
+    tipos_projeto = TipoProjeto.objects.all().order_by('nome')
+    
+    # Buscar contagem por projetista e tipo
+    projetos_por_tipo = base_query.values(
+        'projetista__id',
+        'projetista__username',
+        'projetista__first_name',
+        'projetista__last_name',
+        'tipo_projeto__nome'
+    ).annotate(
+        count=Count('id')
+    ).order_by('projetista__first_name', 'projetista__last_name')
+    
+    # Estruturar dados
+    projetistas_data = []
+    totais_por_tipo = {}
+    projetistas_dict = {}
+    
+    for item in projetos_por_tipo:
+        projetista_id = item['projetista__id']
+        
+        if projetista_id not in projetistas_dict:
+            # Criar novo projetista
+            nome = f"{item['projetista__first_name']} {item['projetista__last_name']}".strip()
+            if not nome:
+                nome = item['projetista__username']
+            
+            projetistas_dict[projetista_id] = {
+                'id': projetista_id,
+                'username': item['projetista__username'],
+                'nome': nome,
+                'tipos': {},
+                'total': 0
+            }
+        
+        tipo_nome = item['tipo_projeto__nome']
+        count = item['count']
+        
+        # Adicionar contagem ao tipo
+        projetistas_dict[projetista_id]['tipos'][tipo_nome] = count
+        projetistas_dict[projetista_id]['total'] += count
+        
+        # Atualizar total por tipo
+        if tipo_nome in totais_por_tipo:
+            totais_por_tipo[tipo_nome] += count
+        else:
+            totais_por_tipo[tipo_nome] = count
+    
+    # Converter dicionário para lista e ordenar
+    projetistas_data = list(projetistas_dict.values())
+    projetistas_data.sort(key=lambda x: x['total'], reverse=True)
+    
+    # Calcular totais
+    total_geral = sum(proj['total'] for proj in projetistas_data)
+    
+    # Calcular média
+    if projetistas_data:
+        media_por_projetista = total_geral / len(projetistas_data)
+    else:
+        media_por_projetista = 0
+
     context = {
         'producoes': producoes,
         'stats': stats_dict,
+        # Dados para a tabela
+        'tipos_projeto': tipos_projeto,
+        'projetistas_data': projetistas_data,
+        'totais_por_tipo': totais_por_tipo,
+        'total_geral': total_geral,
+        'media_por_projetista': media_por_projetista,
+        # Passar o filtro de data para o template
+        'data_filtro': data_filtro,
     }
 
     return render(request, 'home.html', context)

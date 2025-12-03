@@ -1,6 +1,9 @@
 {% extends "base.html" %}
-{% block body %}
-
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/registration/cadastro.css' %}">
+{% endblock %}
+{% block content %}
     <div class="container mt-4 mb-4">
         <div class="row justify-content-center ">
             <div class="col-md-8 col-lg-6">
@@ -138,7 +141,4 @@
             </div>
         </div>
     </div>
-
-    
-    
 {% endblock %}

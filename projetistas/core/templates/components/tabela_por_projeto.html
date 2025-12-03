@@ -1,0 +1,500 @@
+{% load static %}
+
+<div class="projects-table-container">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">
+                    <i class="fas fa-table me-2 text-primary"></i>
+                    Tabela por tipo de projeto
+                </h5>
+                
+                <!-- Filtro de Data -->
+                <div class="date-filter">
+                    <form method="get" class="d-flex align-items-center gap-2" id="dateFilterForm">
+                        <div class="input-group input-group-sm" style="width: 200px;">
+                            <span class="input-group-text">
+                                <i class="fas fa-calendar-alt"></i>
+                            </span>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="filterDate" 
+                                   name="data_filtro"
+                                   value="{{ request.GET.data_filtro|default:'' }}">
+                            <button class="btn btn-outline-primary" type="submit" title="Filtrar">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            {% if request.GET.data_filtro %}
+                            <a href="?" class="btn btn-outline-secondary" title="Limpar filtro">
+                                <i class="fas fa-times"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            {% if request.GET.data_filtro %}
+            <div class="mt-2">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Filtrado para: <strong>{{ request.GET.data_filtro }}</strong>
+                    <a href="?" class="ms-2 text-decoration-none">
+                        <small><i class="fas fa-times me-1"></i>Remover filtro</small>
+                    </a>
+                </small>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover projects-table">
+                    <thead>
+                        <tr class="table-light">
+                            <th class="projetista-header">
+                                <i class="fas fa-user me-1"></i>
+                                Projetista
+                            </th>
+                            {% for tipo in tipos_projeto %}
+                            <th class="tipo-header text-center">
+                                {{ tipo.nome }}
+                            </th>
+                            {% endfor %}
+                            <th class="total-header text-center">
+                                <i class="fas fa-chart-bar me-1"></i>
+                                Total
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for projetista in projetistas_data %}
+                        <tr class="projetista-row">
+                            <td class="projetista-cell">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-3">
+                                        {{ projetista.nome|first|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">{{ projetista.nome }}</div>
+                                        <small class="text-muted">{{ projetista.username }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            {% for tipo in tipos_projeto %}
+                            <td class="tipo-cell text-center">
+                                {% for key, value in projetista.tipos.items %}
+                                    {% if key == tipo.nome %}
+                                        {% if value > 0 %}
+                                        <span class="count-badge">
+                                            {{ value }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% if not tipo.nome in projetista.tipos %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            
+                            <td class="total-cell text-center">
+                                <span class="total-badge">
+                                    {{ projetista.total }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{{ tipos_projeto|length|add:2 }}" class="text-center py-4">
+                                <i class="fas fa-database fa-2x text-muted mb-3"></i>
+                                <p class="text-muted mb-0">
+                                    {% if request.GET.data_filtro %}
+                                        Nenhum dado encontrado para a data selecionada
+                                    {% else %}
+                                        Nenhum dado disponível
+                                    {% endif %}
+                                </p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    
+                    <!-- Totais por tipo -->
+                    <tfoot>
+                        <tr class="table-light">
+                            <th class="total-footer">
+                                <i class="fas fa-calculator me-1"></i>
+                                Total por Tipo
+                            </th>
+                            {% for tipo in tipos_projeto %}
+                            <td class="text-center fw-bold">
+                                {% for key, value in totais_por_tipo.items %}
+                                    {% if key == tipo.nome %}
+                                        <span class="text-primary">{{ value }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if not tipo.nome in totais_por_tipo %}
+                                    <span class="text-muted">0</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            <td class="text-center fw-bold">
+                                <span class="text-success">{{ total_geral }}</span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            
+            <!-- Estatísticas -->
+            <div class="stats-summary mt-4">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-primary">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">Projetistas</div>
+                                <div class="stat-value">{{ projetistas_data|length }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-success">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">Tipos de Projeto</div>
+                                <div class="stat-value">{{ tipos_projeto|length }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-info">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">Projetos Total</div>
+                                <div class="stat-value">{{ total_geral }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-warning">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">Média por Projetista</div>
+                                <div class="stat-value">{{ media_por_projetista|floatformat:1 }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Indicador de Filtro Ativo -->
+                {% if request.GET.data_filtro %}
+                <div class="alert alert-info mt-3 mb-0">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-filter me-2"></i>
+                        <div>
+                            <small>
+                                <strong>Filtro ativo:</strong> Data = {{ request.GET.data_filtro }}
+                                <a href="?" class="ms-2 text-decoration-none">
+                                    <small><i class="fas fa-times me-1"></i>Limpar filtro</small>
+                                </a>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.projects-table-container {
+    margin: 2rem 0;
+}
+
+.date-filter {
+    margin-left: auto;
+}
+
+.date-filter .input-group {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-radius: 6px;
+}
+
+.date-filter .input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.date-filter .form-control {
+    border-color: #dee2e6;
+    font-size: 0.85rem;
+}
+
+.date-filter .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.projects-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.projects-table thead th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+    padding: 1rem;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.projetista-header {
+    width: 200px;
+    min-width: 200px;
+}
+
+.tipo-header {
+    min-width: 120px;
+}
+
+.total-header {
+    min-width: 100px;
+}
+
+.projetista-row {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.projetista-row:hover {
+    background-color: rgba(67, 97, 238, 0.03);
+    transform: translateY(-1px);
+}
+
+.projetista-cell {
+    padding: 1rem;
+    border-right: 1px solid #f0f0f0;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.tipo-cell {
+    padding: 1rem;
+    border-right: 1px solid #f0f0f0;
+}
+
+.count-badge {
+    display: inline-block;
+    padding: 0.4rem 0.75rem;
+    background: rgba(67, 97, 238, 0.1);
+    color: #4361ee;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 40px;
+    transition: all 0.3s ease;
+}
+
+.count-badge:hover {
+    background: rgba(67, 97, 238, 0.2);
+    transform: scale(1.05);
+}
+
+.total-cell {
+    padding: 1rem;
+}
+
+.total-badge {
+    display: inline-block;
+    padding: 0.4rem 0.9rem;
+    background: linear-gradient(135deg, #198754, #20c997);
+    color: white;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 50px;
+}
+
+.table tfoot th {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-top: 2px solid #dee2e6;
+}
+
+.stats-summary {
+    margin-top: 2rem;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+}
+
+.stat-content {
+    flex-grow: 1;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-weight: 700;
+    color: #2c3e50;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+/* Animações para filtro */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.filter-active {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .table-responsive {
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .projects-table {
+        min-width: 800px;
+    }
+    
+    .projetista-header {
+        width: 150px;
+        min-width: 150px;
+    }
+    
+    .tipo-header {
+        min-width: 100px;
+    }
+}
+
+@media (max-width: 768px) {
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+    
+    .date-filter {
+        width: 100%;
+        margin-left: 0;
+    }
+    
+    .date-filter .input-group {
+        width: 100% !important;
+    }
+    
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem 1rem;
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Focar no campo de data quando carregar
+    const filterDate = document.getElementById('filterDate');
+    if (filterDate && !filterDate.value) {
+        // Definir data atual como padrão
+        const today = new Date().toISOString().split('T')[0];
+        filterDate.value = today;
+    }
+    
+    // Adicionar máscara de data (opcional)
+    if (filterDate) {
+        filterDate.addEventListener('change', function() {
+            if (this.value) {
+                // Formatar a data para exibição
+                const date = new Date(this.value);
+                const formattedDate = date.toLocaleDateString('pt-BR');
+                console.log('Filtrando por data:', formattedDate);
+            }
+        });
+    }
+    
+    // Submissão automática do formulário (opcional)
+    const dateFilterForm = document.getElementById('dateFilterForm');
+    if (dateFilterForm && filterDate) {
+        filterDate.addEventListener('change', function() {
+            if (this.value) {
+                dateFilterForm.submit();
+            }
+        });
+    }
+});
+</script>

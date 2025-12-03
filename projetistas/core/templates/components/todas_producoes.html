@@ -1,0 +1,833 @@
+{% if user.is_authenticated %}
+{% load static %}
+
+<div class="productions-dashboard">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-table me-2 text-primary"></i>
+                    <h5 class="fw-bold mb-0 d-inline">
+                        {% if user.is_authenticated and not user.is_superuser %}
+                            Suas Produções
+                        {% else %}
+                            Todas as Produções
+                        {% endif %}
+                    </h5>
+                    <span class="badge bg-primary ms-2">{{ producoes|length }}</span>
+                </div>
+                
+                <!-- Filtros rápidos - usando dados já calculados -->
+                <div class="quick-filters">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary active" data-filter="all">
+                            Todas <span class="badge bg-primary ms-1">{{ stats.total|default:0 }}</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-success" data-filter="concluido">
+                            <i class="fas fa-check-circle me-1"></i>Concluídas
+                            <span class="badge bg-success ms-1">{{ stats.CONCLUIDO|default:0 }}</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" data-filter="cancelado">
+                            <i class="fas fa-times-circle me-1"></i>Canceladas
+                            <span class="badge bg-danger ms-1">{{ stats.CANCELADO|default:0 }}</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-warning" data-filter="andamento">
+                            <i class="fas fa-spinner me-1"></i>Em Andamento
+                            <span class="badge bg-warning ms-1">{{ stats.EM_ANDAMENTO|default:0 }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 production-table" id="productionTable">
+                    <thead class="table-light">
+                        <tr>
+                            <!-- DC/ID -->
+                            <th width="120">
+                                <div class="filter-header">
+                                    <span class="d-flex align-items-center">
+                                        <i class="fas fa-hashtag me-1"></i> 
+                                        <span>DC/ID</span>
+                                        <i class="fas fa-sort sort-icon ms-auto" data-column="0"></i>
+                                    </span>
+                                </div>
+                                <input type="text" class="filter-input form-control form-control-sm mt-1" 
+                                       data-column="0" placeholder="Filtrar ID...">
+                            </th>
+                            
+                            <!-- Projetista -->
+                            <th width="150">
+                                <div class="filter-header">
+                                    <span class="d-flex align-items-center">
+                                        <i class="fas fa-user me-1"></i> 
+                                        <span>Projetista</span>
+                                        <i class="fas fa-sort sort-icon ms-auto" data-column="1"></i>
+                                    </span>
+                                </div>
+                                <input type="text" class="filter-input form-control form-control-sm mt-1" 
+                                       data-column="1" placeholder="Filtrar nome...">
+                            </th>
+                            
+                            <!-- Tipo de Projeto -->
+                            <th width="150">
+                                <div class="filter-header">
+                                    <span class="d-flex align-items-center">
+                                        <i class="fas fa-project-diagram me-1"></i> 
+                                        <span>Tipo</span>
+                                        <i class="fas fa-sort sort-icon ms-auto" data-column="2"></i>
+                                    </span>
+                                </div>
+                                <select class="filter-select form-select form-select-sm mt-1" data-column="2">
+                                    <option value="">Todos os tipos</option>
+                                    {% for tipo in tipos_projeto %}
+                                        <option value="{{ tipo.nome }}">{{ tipo.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </th>
+                            
+                            <!-- Status com indicador de tempo -->
+                            <th width="180">
+                                <div class="filter-header">
+                                    <span class="d-flex align-items-center">
+                                        <i class="fas fa-tasks me-1"></i> 
+                                        <span>Status / Tempo</span>
+                                        <i class="fas fa-sort sort-icon ms-auto" data-column="3"></i>
+                                    </span>
+                                </div>
+                                <select class="filter-select form-select form-select-sm mt-1" data-column="3">
+                                    <option value="">Todos</option>
+                                    <option value="Concluído">Concluído</option>
+                                    <option value="Em andamento">Em andamento</option>
+                                    <option value="Revisão">Revisão</option>
+                                    <option value="Pendente">Pendente</option>
+                                    <option value="Cancelado">Cancelado</option>
+                                </select>
+                            </th>
+                            
+                            <!-- Datas -->
+                            <th width="200">
+                                <div class="filter-header">
+                                    <span class="d-flex align-items-center">
+                                        <i class="fas fa-calendar-alt me-1"></i> 
+                                        <span>Período</span>
+                                    </span>
+                                </div>
+                                <div class="d-flex gap-1 mt-1">
+                                    <input type="date" class="form-control form-control-sm" 
+                                           id="filterStartDate" placeholder="Início">
+                                    <input type="date" class="form-control form-control-sm" 
+                                           id="filterEndDate" placeholder="Fim">
+                                </div>
+                            </th>
+                            
+                            <!-- Motivo -->
+                            <th>
+                                <div class="filter-header">
+                                    <span class="d-flex align-items-center">
+                                        <i class="fas fa-comment-dots me-1"></i> 
+                                        <span>Observações</span>
+                                        <i class="fas fa-sort sort-icon ms-auto" data-column="5"></i>
+                                    </span>
+                                </div>
+                                <input type="text" class="filter-input form-control form-control-sm mt-1" 
+                                       data-column="5" placeholder="Filtrar...">
+                            </th>
+                            
+                            <!-- Ações -->
+                            <th width="100" class="text-center">
+                                <div class="filter-header">
+                                    <span class="d-flex align-items-center">
+                                        <i class="fas fa-history me-1"></i> 
+                                        <span>Detalhes</span>
+                                    </span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    
+                    <tbody id="tableBody">
+                        {% for producao in producoes %}
+                        <!-- Linha principal - Destaque por status -->
+                        <tr class="production-row 
+                            {% if producao.status == 'CONCLUIDO' %}row-completed
+                            {% elif producao.status == 'CANCELADO' %}row-cancelled
+                            {% endif %}"
+                            data-status="{{ producao.status|lower }}"
+                            data-id="{{ producao.id }}">
+                            
+                            <!-- DC/ID -->
+                            <td class="align-middle">
+                                <div class="d-flex align-items-center">
+                                    <div class="dc-id-badge">
+                                        <i class="fas fa-hashtag me-1"></i>
+                                        <strong class="dc-id">{{ producao.dc_id }}</strong>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Projetista -->
+                            <td class="align-middle">
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-2">
+                                        {% if producao.projetista %}
+                                            {{ producao.projetista.first_name|first|upper }}{{ producao.projetista.last_name|first|upper }}
+                                        {% else %}
+                                            ?
+                                        {% endif %}
+                                    </div>
+                                    <div class="user-info">
+                                        <div class="user-name fw-medium">
+                                            {% if producao.projetista %}
+                                                {{ producao.projetista.get_short_name|default:producao.projetista.username }}
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted user-email">
+                                            {% if producao.projetista.email %}
+                                                {{ producao.projetista.email|truncatechars:15 }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Tipo de Projeto -->
+                            <td class="align-middle">
+                                {% if producao.tipo_projeto %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">
+                                        <i class="fas fa-folder me-1"></i>
+                                        {{ producao.tipo_projeto.nome }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Status com indicador de tempo -->
+                            <td class="align-middle">
+                                <div class="status-container">
+                                    <!-- Badge de Status -->
+                                    {% if producao.status == 'CONCLUIDO' %}
+                                        <span class="status-badge status-completed">
+                                            <i class="fas fa-check-circle me-1"></i>Concluído
+                                        </span>
+                                    {% elif producao.status == 'EM_ANDAMENTO' %}
+                                        <span class="status-badge status-in-progress">
+                                            <i class="fas fa-spinner fa-spin me-1"></i>Em andamento
+                                        </span>
+                                    {% elif producao.status == 'REVISAO' %}
+                                        <span class="status-badge status-review">
+                                            <i class="fas fa-search me-1"></i>Revisão
+                                        </span>
+                                    {% elif producao.status == 'PENDENTE' %}
+                                        <span class="status-badge status-pending">
+                                            <i class="fas fa-clock me-1"></i>Pendente
+                                        </span>
+                                    {% elif producao.status == 'CANCELADO' %}
+                                        <span class="status-badge status-cancelled">
+                                            <i class="fas fa-times-circle me-1"></i>Cancelado
+                                        </span>
+                                    {% endif %}
+                                    
+                                    <!-- Indicador de Tempo -->
+                                    <div class="time-indicator mt-2">
+                                        {% if producao.status == 'CONCLUIDO' and producao.data_conclusao and producao.data_inicio %}
+                                            {% with tempo=producao.tempo_total %}
+                                                <div class="time-success">
+                                                    <small>
+                                                        <i class="fas fa-stopwatch me-1"></i>
+                                                        <span class="fw-medium">{{ tempo.days }}d</span>
+                                                        {% if tempo.seconds > 0 %}
+                                                            {% widthratio tempo.seconds 3600 1 as horas %}
+                                                            {{ horas|floatformat:0 }}h
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                            {% endwith %}
+                                        {% elif producao.status == 'EM_ANDAMENTO' and producao.data_inicio %}
+                                            {% with tempo=producao.tempo_total %}
+                                                <div class="time-in-progress">
+                                                    <small>
+                                                        <i class="fas fa-hourglass-half me-1"></i>
+                                                        <span class="fw-medium">
+                                                            {{ tempo.days }}d em andamento
+                                                        </span>
+                                                    </small>
+                                                </div>
+                                            {% endwith %}
+                                        {% elif producao.status == 'CANCELADO' and producao.data_cancelamento %}
+                                            <div class="time-cancelled">
+                                                <small>
+                                                    <i class="fas fa-ban me-1"></i>
+                                                    Cancelado em {{ producao.data_cancelamento|date:"d/m" }}
+                                                </small>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Datas de início e conclusão -->
+                            <td class="align-middle">
+                                <div class="date-info">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fas fa-play text-success me-2"></i>
+                                        <small>
+                                            <strong>Início:</strong>
+                                            {{ producao.data_inicio|date:"d/m/Y" }}
+                                            <span class="text-muted ms-1">{{ producao.data_inicio|date:"H:i" }}</span>
+                                        </small>
+                                    </div>
+                                    
+                                    {% if producao.status == 'CONCLUIDO' and producao.data_conclusao %}
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-flag-checkered text-primary me-2"></i>
+                                        <small>
+                                            <strong>Conclusão:</strong>
+                                            {{ producao.data_conclusao|date:"d/m/Y" }}
+                                            <span class="text-muted ms-1">{{ producao.data_conclusao|date:"H:i" }}</span>
+                                        </small>
+                                    </div>
+                                    {% elif producao.status == 'CANCELADO' and producao.data_cancelamento %}
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-times text-danger me-2"></i>
+                                        <small>
+                                            <strong>Cancelado:</strong>
+                                            {{ producao.data_cancelamento|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+                            <!-- Motivo/Observações -->
+                            <td class="align-middle">
+                                <div class="observations">
+                                    {% if producao.motivo_status %}
+                                        <div class="text-truncate" style="max-width: 250px;" 
+                                             title="{{ producao.motivo_status }}">
+                                            {{ producao.motivo_status }}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                    
+                                    {% if producao.observacoes %}
+                                        <small class="text-muted d-block mt-1">
+                                            <i class="fas fa-sticky-note me-1"></i>
+                                            {{ producao.observacoes|truncatechars:50 }}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+                            <!-- Botão de histórico -->
+                            <td class="align-middle text-center">
+                                <button class="btn btn-sm btn-outline-primary historico-toggle" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#historico-{{ producao.id }}"
+                                        title="Ver histórico">
+                                    <i class="fas fa-history"></i>
+                                    <span class="badge bg-primary ms-1">
+                                        {{ producao.historico.count }}
+                                    </span>
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Linha de histórico (collapse) -->
+                        <tr class="historico-row">
+                            <td colspan="7" class="p-0 border-0">
+                                <div class="collapse" id="historico-{{ producao.id }}">
+                                    <div class="historico-container p-4">
+                                        <!-- Cabeçalho do histórico -->
+                                        <div class="historico-header mb-4">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="fw-bold mb-0">
+                                                        <i class="fas fa-stream me-2 text-primary"></i>
+                                                        Histórico do Projeto: {{ producao.dc_id }}
+                                                    </h6>
+                                                    <small class="text-muted">
+                                                        {% if producao.projetista %}
+                                                            Projetista: {{ producao.projetista.get_full_name|default:producao.projetista.username }}
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                                <span class="badge bg-light text-dark">
+                                                    {{ producao.historico.count }} alterações
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Resumo do tempo -->
+                                        {% if producao.status == 'CONCLUIDO' and producao.data_conclusao and producao.data_inicio %}
+                                        <div class="time-summary mb-4">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3 mb-md-0">
+                                                    <div class="card border-success bg-success bg-opacity-10">
+                                                        <div class="card-body">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="icon-wrapper bg-success me-3">
+                                                                    <i class="fas fa-check text-white"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="text-muted d-block">Concluído em</small>
+                                                                    <strong class="h5 mb-0">{{ producao.data_conclusao|date:"d/m/Y H:i" }}</strong>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="card border-primary bg-primary bg-opacity-10">
+                                                        <div class="card-body">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="icon-wrapper bg-primary me-3">
+                                                                    <i class="fas fa-stopwatch text-white"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <small class="text-muted d-block">Tempo total de produção</small>
+                                                                    <strong class="h5 mb-0">
+                                                                        {% with tempo=producao.tempo_total %}
+                                                                            {{ tempo.days }} dias
+                                                                            {% if tempo.seconds > 0 %}
+                                                                                {% widthratio tempo.seconds 3600 1 as horas %}
+                                                                                e {{ horas|floatformat:0 }} horas
+                                                                            {% endif %}
+                                                                        {% endwith %}
+                                                                    </strong>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <!-- Timeline do histórico -->
+                                        <div class="historico-timeline">
+                                            <h6 class="fw-bold mb-3">
+                                                <i class="fas fa-history me-2"></i>
+                                                Linha do Tempo
+                                            </h6>
+                                            
+                                            {% if producao.historico.all %}
+                                                <div class="timeline">
+                                                    {% for registro in producao.historico.all %}
+                                                    <div class="timeline-item 
+                                                        {% if registro.status == 'CONCLUIDO' %}timeline-success
+                                                        {% elif registro.status == 'CANCELADO' %}timeline-danger
+                                                        {% elif registro.status == 'EM_ANDAMENTO' %}timeline-primary
+                                                        {% endif %}">
+                                                        
+                                                        <div class="timeline-marker">
+                                                            {% if registro.status == 'CONCLUIDO' %}
+                                                                <i class="fas fa-check-circle"></i>
+                                                            {% elif registro.status == 'CANCELADO' %}
+                                                                <i class="fas fa-times-circle"></i>
+                                                            {% elif registro.status == 'EM_ANDAMENTO' %}
+                                                                <i class="fas fa-spinner"></i>
+                                                            {% else %}
+                                                                <i class="fas fa-circle"></i>
+                                                            {% endif %}
+                                                        </div>
+                                                        
+                                                        <div class="timeline-content">
+                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                <div>
+                                                                    <h6 class="fw-bold mb-1">
+                                                                        {{ registro.get_status_display }}
+                                                                    </h6>
+                                                                    {% if registro.motivo %}
+                                                                    <p class="mb-1">{{ registro.motivo }}</p>
+                                                                    {% endif %}
+                                                                </div>
+                                                                <div class="text-end">
+                                                                    <small class="text-muted d-block">
+                                                                        {{ registro.data_alteracao|date:"d/m/Y" }}
+                                                                    </small>
+                                                                    <small class="text-muted">
+                                                                        {{ registro.data_alteracao|date:"H:i" }}
+                                                                    </small>
+                                                                    {% if registro.usuario %}
+                                                                    <small class="d-block text-muted mt-1">
+                                                                        <i class="fas fa-user me-1"></i>
+                                                                        {{ registro.usuario.get_short_name|default:registro.usuario.username }}
+                                                                    </small>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <div class="text-center py-4">
+                                                    <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
+                                                    <p class="text-muted mb-0">Nenhum registro no histórico</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="empty-state">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <h4 class="mt-3">Nenhuma produção encontrada</h4>
+                                    <p class="text-muted mb-0">Não há registros de produção para exibir no momento.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Rodapé com estatísticas - usando dados já calculados na view -->
+        <div class="card-footer bg-white border-top">
+            <div class="row">
+                <div class="col-md-3">
+                    <small class="text-muted d-block">Total de projetos</small>
+                    <strong class="h5 mb-0">{{ stats.total|default:0 }}</strong>
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted d-block">Concluídos</small>
+                    <strong class="h5 mb-0 text-success">{{ stats.CONCLUIDO|default:0 }}</strong>
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted d-block">Em andamento</small>
+                    <strong class="h5 mb-0 text-primary">{{ stats.EM_ANDAMENTO|default:0 }}</strong>
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted d-block">Cancelados</small>
+                    <strong class="h5 mb-0 text-danger">{{ stats.CANCELADO|default:0 }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.productions-dashboard {
+    margin: 2rem 0;
+}
+
+/* Estilos das linhas por status */
+.row-completed {
+    background-color: rgba(25, 135, 84, 0.05) !important;
+    border-left: 4px solid #198754;
+}
+
+.row-cancelled {
+    background-color: rgba(220, 53, 69, 0.05) !important;
+    border-left: 4px solid #dc3545;
+}
+
+.production-row:hover {
+    background-color: rgba(67, 97, 238, 0.03) !important;
+    transform: translateY(-1px);
+    transition: all 0.3s ease;
+}
+
+/* Avatar do usuário */
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Badges de status */
+.status-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid transparent;
+}
+
+.status-completed {
+    background-color: rgba(25, 135, 84, 0.15);
+    color: #198754;
+    border-color: rgba(25, 135, 84, 0.3);
+}
+
+.status-in-progress {
+    background-color: rgba(13, 110, 253, 0.15);
+    color: #0d6efd;
+    border-color: rgba(13, 110, 253, 0.3);
+}
+
+.status-review {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    border-color: rgba(255, 193, 7, 0.3);
+}
+
+.status-pending {
+    background-color: rgba(108, 117, 125, 0.15);
+    color: #6c757d;
+    border-color: rgba(108, 117, 125, 0.3);
+}
+
+.status-cancelled {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+/* Indicadores de tempo */
+.time-success {
+    color: #198754;
+    font-size: 0.8rem;
+}
+
+.time-in-progress {
+    color: #0d6efd;
+    font-size: 0.8rem;
+}
+
+.time-cancelled {
+    color: #dc3545;
+    font-size: 0.8rem;
+}
+
+/* Container do histórico */
+.historico-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-top: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Timeline do histórico */
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 1.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+    padding-left: 1rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.75rem;
+    top: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 2px solid #dee2e6;
+    z-index: 1;
+}
+
+.timeline-success .timeline-marker {
+    color: #198754;
+    border-color: #198754;
+}
+
+.timeline-danger .timeline-marker {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.timeline-primary .timeline-marker {
+    color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.timeline-content {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border: 1px solid #e9ecef;
+}
+
+/* Icon wrapper para resumo */
+.icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Badge DC/ID */
+.dc-id-badge {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.dc-id {
+    color: #4361ee;
+    font-family: 'Courier New', monospace;
+}
+
+/* Filtros rápidos */
+.quick-filters .btn.active {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+}
+
+/* Campos de filtro */
+.filter-header {
+    padding: 0.5rem 0;
+}
+
+.filter-input, .filter-select {
+    font-size: 0.85rem;
+}
+
+/* Estados vazios */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+.empty-state i {
+    opacity: 0.5;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .quick-filters .btn-group {
+        flex-wrap: wrap;
+    }
+    
+    .production-table th:nth-child(5),
+    .production-table td:nth-child(5) {
+        display: none;
+    }
+    
+    .dc-id-badge {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtros rápidos por status
+    const quickFilterButtons = document.querySelectorAll('[data-filter]');
+    quickFilterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remover classe active de todos os botões
+            quickFilterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Adicionar classe active ao botão clicado
+            this.classList.add('active');
+            
+            const filter = this.dataset.filter;
+            filterTableByStatus(filter);
+        });
+    });
+    
+    // Função para filtrar tabela por status
+    function filterTableByStatus(status) {
+        const rows = document.querySelectorAll('.production-row');
+        
+        rows.forEach(row => {
+            if (status === 'all') {
+                row.style.display = '';
+            } else {
+                const rowStatus = row.dataset.status;
+                if (rowStatus === status) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+            
+            // Esconder também as linhas de histórico correspondentes
+            const historicoRow = row.nextElementSibling;
+            if (historicoRow && historicoRow.classList.contains('historico-row')) {
+                historicoRow.style.display = row.style.display;
+            }
+        });
+    }
+    
+    // Filtro por data
+    const filterStartDate = document.getElementById('filterStartDate');
+    const filterEndDate = document.getElementById('filterEndDate');
+    
+    if (filterStartDate && filterEndDate) {
+        filterStartDate.addEventListener('change', filterByDateRange);
+        filterEndDate.addEventListener('change', filterByDateRange);
+    }
+    
+    function filterByDateRange() {
+        const startDate = filterStartDate.value;
+        const endDate = filterEndDate.value;
+        
+        // Implementar lógica de filtro por data aqui
+        console.log('Filtrar por data:', startDate, 'até', endDate);
+    }
+    
+    // Ordenação da tabela
+    const sortIcons = document.querySelectorAll('.sort-icon');
+    sortIcons.forEach(icon => {
+        icon.addEventListener('click', function() {
+            const column = this.dataset.column;
+            sortTable(column);
+        });
+    });
+    
+    function sortTable(column) {
+        // Implementar lógica de ordenação aqui
+        console.log('Ordenar pela coluna:', column);
+    }
+    
+    // Inicializar tooltips do Bootstrap
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endif %}

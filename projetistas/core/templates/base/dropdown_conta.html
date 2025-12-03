@@ -1,0 +1,19 @@
+<div class="dropdown me-3">
+    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="fas fa-user me-1"></i>Minha Conta
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{% url 'perfil' %}">
+            <i class="fas fa-user-edit me-2"></i>Meu Perfil
+        </a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+            <form method="post" action="{% url 'logout' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item border-0 bg-transparent w-100 text-start">
+                    <i class="fas fa-sign-out-alt me-2"></i>Sair
+                </button>
+            </form>
+        </li>
+    </ul>
+</div>

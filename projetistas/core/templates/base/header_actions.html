@@ -1,0 +1,12 @@
+{% load static %}
+<div class="d-flex align-items-center">
+    {% if user.is_authenticated %}
+        {% include 'base/dropdown_conta.html' %}
+    {% else %}
+        {% include 'base/auth_buttons.html' %}
+    {% endif %}
+    
+    {% if user.is_superuser %}
+        {% include 'base/admin_actions.html' %}
+    {% endif %}
+</div>

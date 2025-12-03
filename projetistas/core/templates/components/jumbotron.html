@@ -1,0 +1,47 @@
+{% load static %}
+{% if not user.is_authenticated %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/jumbotron.css' %}">
+{% endblock %}
+
+<div class="minimal-gradient rounded-3 p-4 my-4">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="gradient-card rounded-4 p-5">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="me-3">
+                            <img src="{% static 'img/logo.png' %}" 
+                                 alt="Logo" 
+                                 style="max-height: 50px;">
+                        </div>
+                        <div>
+                            <h3 class="fw-bold mb-0">Sistema de Produção</h3>
+                            <small class="text-muted">Gestão Inteligente de Projetos</small>
+                        </div>
+                    </div>
+                    
+                    <h2 class="fw-bold mb-3">
+                        Controle Total da 
+                        <span class="text-primary">Sua Produção</span>
+                    </h2>
+                    
+                    <p class="text-muted mb-4">
+                        Plataforma completa para gerenciamento de projetos. 
+                        Acompanhe todas as etapas da produção em tempo real.
+                    </p>
+                    
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'login' %}" class="btn btn-primary px-4">
+                            <i class="fas fa-sign-in-alt me-2"></i>Acessar
+                        </a>
+                        <a href="{% url 'cadastro' %}" class="btn btn-outline-primary px-4">
+                            <i class="fas fa-user-plus me-2"></i>Cadastrar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

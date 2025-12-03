@@ -1,0 +1,148 @@
+{% load static %}
+<header class="header bg-white shadow-sm border-bottom mb-5">
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-4">
+            
+            <!-- Logo/Brand -->
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+                <div class="logo-icon me-2">
+                    <i class="fas fa-chart-line text-primary fs-3"></i>
+                </div>
+                <div>
+                    <span class="fw-bold fs-5 text-primary">ProdManager</span>
+                    <small class="d-block text-muted fs-6">Sistema de Produção</small>
+                </div>
+            </a>
+            
+            <!-- Botão Mobile -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- Menu Principal -->
+            <div class="collapse navbar-collapse" id="navbarMain">
+                
+                <!-- Menu Navegação -->
+                {% if user.is_authenticated %}
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-industry me-1"></i>Produção
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-play-circle me-2"></i>Iniciar Produção</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-tasks me-2"></i>Ordens Ativas</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-history me-2"></i>Histórico</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-chart-bar me-1"></i>Relatórios
+                        </a>
+                    </li>
+                    {% if user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-cog me-1"></i>Administração
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                {% endif %}
+                
+                <!-- Área do Usuário -->
+                <div class="d-flex align-items-center ms-auto">
+                    
+                    <!-- Notificações -->
+                    {% if user.is_authenticated %}
+                    <div class="dropdown me-3">
+                        <button class="btn btn-light position-relative" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                3
+                            </span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">Notificações</h6></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-check-circle text-success me-2"></i>Produção #123 concluída</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-exclamation-triangle text-warning me-2"></i>Atenção: Baixo estoque</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-center" href="#">Ver todas</a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Perfil do Usuário -->
+                    <div class="dropdown">
+                        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                            <div class="avatar-circle me-2">
+                                {% if user.is_authenticated %}
+                                    <span class="avatar-initials">
+                                        {{ user.get_full_name|default:user.username|first|upper }}
+                                    </span>
+                                {% else %}
+                                    <span class="avatar-initials">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="d-none d-md-block">
+                                {% if user.is_authenticated %}
+                                    <span class="fw-medium">{{ user.get_short_name|default:user.username }}</span>
+                                    <small class="d-block text-muted">{{ user.email|truncatechars:20 }}</small>
+                                {% else %}
+                                    <span class="fw-medium">Visitante</span>
+                                    <small class="d-block text-muted">Faça login</small>
+                                {% endif %}
+                            </div>
+                        </a>
+                        
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% if user.is_authenticated %}
+                                <li><h6 class="dropdown-header">Minha Conta</h6></li>
+                                <li><a class="dropdown-item" href="{% url 'perfil' %}"><i class="fas fa-user-circle me-2"></i>Meu Perfil</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configurações</a></li>
+                                
+                                {% if user.is_superuser %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'exportar_excel' %}"><i class="fas fa-file-excel me-2"></i>Exportar Dados</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i>Dashboard Admin</a></li>
+                                {% endif %}
+                                
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item border-0 bg-transparent w-100 text-start">
+                                            <i class="fas fa-sign-out-alt me-2"></i>Sair
+                                        </button>
+                                    </form>
+                                </li>
+                            {% else %}
+                                <li><a class="dropdown-item" href="{% url 'login' %}"><i class="fas fa-sign-in-alt me-2"></i>Login</a></li>
+                                <li><a class="dropdown-item" href="{% url 'cadastro' %}"><i class="fas fa-user-plus me-2"></i>Cadastrar</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Breadcrumb (Opcional) -->
+    {% if user.is_authenticated %}
+    <div class="container-fluid px-4 py-2 bg-light border-top">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                {% block breadcrumb %}{% endblock %}
+            </ol>
+        </nav>
+    </div>
+    {% endif %}
+</header>
