@@ -13,7 +13,7 @@ from django.contrib.auth import logout
 from django.contrib.auth import update_session_auth_hash
 from .models import Producao, TipoProjeto, Categoria
 from django.utils import timezone
-# Mantenha suas outras views como estão (custom_logout, custom_login, cadastro, home)
+# Mantenha suas outras views como estão (custom_logout, custom_login, cadastro, dashboard, perfil)
 
 register = template.Library()
 
@@ -243,14 +243,14 @@ def custom_logout(request):
     """
     logout(request)
     messages.success(request, 'Você foi desconectado com sucesso!')
-    return redirect('home')
+    return redirect('dashboard')
 
 def custom_login(request):
     """
     View personalizada para login
     """
     if request.user.is_authenticated:
-        return redirect('home')
+        return redirect('dashboard')
     
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -262,8 +262,8 @@ def custom_login(request):
                 login(request, user)
                 messages.success(request, f'Bem-vindo, {username}!')
                 
-                # Redirecionar para a página que o usuário tentou acessar ou home
-                next_url = request.GET.get('next', 'home')
+                # Redirecionar para a página que o usuário tentou acessar ou dashboard
+                next_url = request.GET.get('next', 'dashboard')
                 return redirect(next_url)
         else:
             messages.error(request, 'Usuário ou senha inválidos.')
@@ -277,7 +277,7 @@ def cadastro(request):
     View para cadastro de novos usuários
     """
     if request.user.is_authenticated:
-        return redirect('home')
+        return redirect('dashboard')
     
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
@@ -287,7 +287,7 @@ def cadastro(request):
             # Fazer login automaticamente após o cadastro
             login(request, user)
             messages.success(request, f'Conta criada com sucesso! Bem-vindo, {user.username}!')
-            return redirect('home')
+            return redirect('dashboard')
         else:
             messages.error(request, 'Por favor, corrija os erros abaixo.')
     else:
