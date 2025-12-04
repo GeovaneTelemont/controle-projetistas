@@ -415,24 +415,37 @@ def perfil(request):
     }
     
     return render(request, 'registration/perfil.html', context)
-
-from django.db.models import Count, Q
+import json
 from django.shortcuts import render
+from django.db.models import Count, Q
 from .models import Producao, TipoProjeto, User
-from datetime import datetime
+from datetime import datetime, timedelta
+from django.utils import timezone
 
 def home(request):
     """
     View para a página inicial.
     """
-    # Obter parâmetro de filtro de data
+    # Obter parâmetros
     data_filtro = request.GET.get('data_filtro')
+    ver_todos = request.GET.get('ver_todos', 'false')  # Novo parâmetro com valor padrão
+    
+    # Converter para booleano
+    if ver_todos.lower() == 'true':
+        ver_todos = True
+    else:
+        ver_todos = False
+    
+    # Para superusuários, sempre mostrar todos
+    if request.user.is_superuser:
+        ver_todos = True
     
     # Base query com filtro de data se existir
     if data_filtro:
         try:
             data_filtro_obj = datetime.strptime(data_filtro, '%Y-%m-%d').date()
-            if request.user.is_authenticated and not request.user.is_superuser:
+            if request.user.is_authenticated and not ver_todos:
+                # Usuário comum vendo apenas seus projetos
                 producoes = Producao.objects.filter(
                     projetista=request.user,
                     data=data_filtro_obj
@@ -442,20 +455,21 @@ def home(request):
                     data=data_filtro_obj
                 )
             else:
+                # Superusuário ou usuário comum escolhendo ver todos
                 producoes = Producao.objects.filter(
                     data=data_filtro_obj
                 ).order_by('-data')
                 base_query = Producao.objects.filter(data=data_filtro_obj)
         except ValueError:
             # Data inválida, usar sem filtro
-            if request.user.is_authenticated and not request.user.is_superuser:
+            if request.user.is_authenticated and not ver_todos:
                 producoes = Producao.objects.filter(projetista=request.user).order_by('-data')
                 base_query = Producao.objects.filter(projetista=request.user)
             else:
                 producoes = Producao.objects.all().order_by('-data')
                 base_query = Producao.objects.all()
     else:
-        if request.user.is_authenticated and not request.user.is_superuser:
+        if request.user.is_authenticated and not ver_todos:
             producoes = Producao.objects.filter(projetista=request.user).order_by('-data')
             base_query = Producao.objects.filter(projetista=request.user)
         else:
@@ -545,6 +559,125 @@ def home(request):
     else:
         media_por_projetista = 0
 
+    # ========== DADOS PARA O COMPONENTE ANALYTICS ==========
+    
+    # Período para analytics (últimos 30 dias)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    
+    # Base query para analytics
+    if request.user.is_authenticated and not ver_todos:
+        # Usuário vendo apenas seus projetos
+        analytics_base_query = Producao.objects.filter(
+            projetista=request.user,
+            data_inicio__gte=thirty_days_ago
+        )
+    else:
+        # Ver todos os projetos
+        analytics_base_query = Producao.objects.filter(
+            data_inicio__gte=thirty_days_ago
+        )
+    
+    # Aplicar filtro de data se existir (o mesmo da tabela)
+    if data_filtro:
+        try:
+            data_filtro_obj = datetime.strptime(data_filtro, '%Y-%m-%d').date()
+            analytics_base_query = analytics_base_query.filter(data=data_filtro_obj)
+        except ValueError:
+            pass  # Ignora data inválida para analytics
+    
+    # 1. Dados para o gráfico por tipo de projeto
+    project_types_data = analytics_base_query.values(
+        'tipo_projeto__id', 'tipo_projeto__nome'
+    ).annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    # Cores para o gráfico
+    colors = ["#4361ee", "#3a0ca3", "#7209b7", "#f72585", "#4cc9f0", 
+              "#4895ef", "#560bad", "#b5179e", "#f15bb5", "#00bbf9"]
+    
+    analytics_project_types = []
+    for i, item in enumerate(project_types_data):
+        color = colors[i % len(colors)] if i < len(colors) else f"#{i:06x}"
+        analytics_project_types.append({
+            'id': item['tipo_projeto__id'],
+            'name': item['tipo_projeto__nome'],
+            'count': item['count'],
+            'color': color
+        })
+    
+    # 2. Dados para o ranking de projetistas
+    if request.user.is_authenticated and not ver_todos:
+        # Usuário vendo apenas seus projetos - mostra apenas ele no ranking
+        designers_query = User.objects.filter(id=request.user.id)
+    else:
+        # Ver todos os projetistas
+        designers_query = User.objects.filter(
+            producao__data_inicio__gte=thirty_days_ago
+        ).distinct()
+    
+    # Aplicar filtro de data se existir
+    if data_filtro:
+        try:
+            data_filtro_obj = datetime.strptime(data_filtro, '%Y-%m-%d').date()
+            designers_query = designers_query.filter(
+                producao__data=data_filtro_obj
+            ).distinct()
+        except ValueError:
+            pass
+    
+    # Anotar estatísticas
+    designers_annotated = designers_query.annotate(
+        completed=Count('producao', filter=Q(
+            producao__status='CONCLUIDO',
+            producao__data_inicio__gte=thirty_days_ago
+        )),
+        in_progress=Count('producao', filter=Q(
+            producao__status='EM_ANDAMENTO',
+            producao__data_inicio__gte=thirty_days_ago
+        )),
+        total=Count('producao', filter=Q(
+            producao__data_inicio__gte=thirty_days_ago
+        ))
+    ).filter(total__gt=0).order_by('-completed')
+    
+    # Processar dados dos projetistas
+    analytics_designers = []
+    for designer in designers_annotated:
+        if designer.total > 0:
+            efficiency = round((designer.completed / designer.total) * 100, 1)
+        else:
+            efficiency = 0
+        
+        # Formatar nome
+        display_name = designer.get_full_name()
+        if not display_name:
+            display_name = designer.username
+        
+        analytics_designers.append({
+            'id': designer.id,
+            'name': display_name,
+            'username': designer.username,
+            'completed': designer.completed,
+            'in_progress': designer.in_progress,
+            'total': designer.total,
+            'efficiency': efficiency
+        })
+    
+    # 3. Estatísticas gerais para analytics
+    analytics_stats = {
+        'total': analytics_base_query.count(),
+        'in_progress': analytics_base_query.filter(status='EM_ANDAMENTO').count(),
+        'completed': analytics_base_query.filter(status='CONCLUIDO').count(),
+    }
+    
+    # Converter dados para JSON (para usar no template mais facilmente)
+    analytics_data_json = {
+        'project_types': analytics_project_types,
+        'designers': analytics_designers,
+        'stats': analytics_stats
+    }
+
     context = {
         'producoes': producoes,
         'stats': stats_dict,
@@ -554,8 +687,15 @@ def home(request):
         'totais_por_tipo': totais_por_tipo,
         'total_geral': total_geral,
         'media_por_projetista': media_por_projetista,
-        # Passar o filtro de data para o template
+        # Passar os filtros para o template
         'data_filtro': data_filtro,
+        'ver_todos': ver_todos,
+        
+        # ========== DADOS PARA ANALYTICS ==========
+        'analytics_project_types': analytics_project_types,
+        'analytics_designers': analytics_designers,
+        'analytics_stats': analytics_stats,
+        'analytics_data_json': json.dumps(analytics_data_json),  # Dados em JSON
     }
 
     return render(request, 'home.html', context)

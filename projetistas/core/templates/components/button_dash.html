@@ -1,0 +1,21 @@
+ {% load static %}
+ <!-- Botões de alternância (adicione onde quiser, por exemplo perto dos filtros) -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <!-- Seus outros elementos de cabeçalho -->
+        </div>
+        
+        <!-- Botões de alternância Meus Projetos / Todos os Projetos -->
+        {% if user.is_authenticated and not user.is_superuser %}
+        <div class="btn-group" role="group">
+            <a href="?ver_todos=false{% if data_filtro %}&data_filtro={{ data_filtro }}{% endif %}" 
+               class="btn btn-sm {% if not ver_todos %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-user me-1"></i>Meus projetos
+            </a>
+            <a href="?ver_todos=true{% if data_filtro %}&data_filtro={{ data_filtro }}{% endif %}" 
+               class="btn btn-sm {% if ver_todos %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-users me-1"></i>Todos os projetos
+            </a>
+        </div>
+        {% endif %}
+    </div>
