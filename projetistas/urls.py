@@ -22,11 +22,11 @@ from projetistas.core import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.home, name='home'),
+    path('', views.dashboard, name='dashboard'),
     
     # URLs de autenticação
     path('login/', views.custom_login, name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='dashboard'), name='logout'),
     path('cadastro/', views.cadastro, name='cadastro'),
     path('perfil/', views.perfil, name='perfil'),
      path('exportar-excel/', views.exportar_excel, name='exportar_excel'),

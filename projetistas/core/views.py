@@ -422,7 +422,7 @@ from .models import Producao, TipoProjeto, User
 from datetime import datetime, timedelta
 from django.utils import timezone
 
-def home(request):
+def dashboard(request):
     """
     View para a página inicial.
     """
@@ -698,7 +698,7 @@ def home(request):
         'analytics_data_json': json.dumps(analytics_data_json),  # Dados em JSON
     }
 
-    return render(request, 'home.html', context)
+    return render(request, 'dashboard.html', context)
 
 
 @register.filter
