@@ -1,0 +1,242 @@
+.projects-table-container {
+    margin: 2rem 0;
+}
+
+.date-filter {
+    margin-left: auto;
+}
+
+.date-filter .input-group {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-radius: 6px;
+}
+
+.date-filter .input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.date-filter .form-control {
+    border-color: #dee2e6;
+    font-size: 0.85rem;
+}
+
+.date-filter .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.projects-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.projects-table thead th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+    padding: 1rem;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.projetista-header {
+    width: 200px;
+    min-width: 200px;
+}
+
+.tipo-header {
+    min-width: 120px;
+}
+
+.total-header {
+    min-width: 100px;
+}
+
+.projetista-row {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.projetista-row:hover {
+    background-color: rgba(67, 97, 238, 0.03);
+    transform: translateY(-1px);
+}
+
+.projetista-cell {
+    padding: 1rem;
+    border-right: 1px solid #f0f0f0;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.tipo-cell {
+    padding: 1rem;
+    border-right: 1px solid #f0f0f0;
+}
+
+.count-badge {
+    display: inline-block;
+    padding: 0.4rem 0.75rem;
+    background: rgba(67, 97, 238, 0.1);
+    color: #4361ee;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 40px;
+    transition: all 0.3s ease;
+}
+
+.count-badge:hover {
+    background: rgba(67, 97, 238, 0.2);
+    transform: scale(1.05);
+}
+
+.total-cell {
+    padding: 1rem;
+}
+
+.total-badge {
+    display: inline-block;
+    padding: 0.4rem 0.9rem;
+    background: linear-gradient(135deg, #198754, #20c997);
+    color: white;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    min-width: 50px;
+}
+
+.table tfoot th {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-top: 2px solid #dee2e6;
+}
+
+.stats-summary {
+    margin-top: 2rem;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+}
+
+.stat-content {
+    flex-grow: 1;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-weight: 700;
+    color: #2c3e50;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+/* Animações para filtro */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.filter-active {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .table-responsive {
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .projects-table {
+        min-width: 800px;
+    }
+    
+    .projetista-header {
+        width: 150px;
+        min-width: 150px;
+    }
+    
+    .tipo-header {
+        min-width: 100px;
+    }
+}
+
+@media (max-width: 768px) {
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+    
+    .date-filter {
+        width: 100%;
+        margin-left: 0;
+    }
+    
+    .date-filter .input-group {
+        width: 100% !important;
+    }
+    
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem 1rem;
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+    }
+}

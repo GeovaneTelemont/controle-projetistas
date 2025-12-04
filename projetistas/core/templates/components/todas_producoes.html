@@ -1,5 +1,9 @@
 {% load static %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/todas_producoes.css' %}">
+{% endblock %}
+
 <div class="productions-dashboard">
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-0">
@@ -17,33 +21,33 @@
                 </div>
                 
                 <!-- Filtros rápidos - usando dados já calculados -->
-                <div class="quick-filters">
+               <div class="quick-filters">
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-primary active" data-filter="all">
-                            Todas <span class="badge bg-primary ms-1">{{ stats.total|default:0 }}</span>
+                            Todas <span class="badge bg-primary ms-1" id="count-all">{{ stats.total|default:0 }}</span>
                         </button>
                         <button type="button" class="btn btn-outline-success" data-filter="concluido">
-                            <i class="fas fa-check-circle me-1"></i>Concluídas
+                            <i class="fas fa-check-circle me-1"></i>Concluído
                             <span class="badge bg-success ms-1">{{ stats.CONCLUIDO|default:0 }}</span>
                         </button>
-                        <button type="button" class="btn btn-outline-success" data-filter="revisao">
-                            <i class="fas fa-check-circle me-1"></i>Revisão
-                            <span class="badge bg-success ms-1">{{ stats.REVISAO|default:0 }}</span>
+                        <button type="button" class="btn btn-outline-purple" data-filter="revisao">
+                            <i class="fas fa-search me-1"></i>Em Revisão
+                            <span class="badge bg-purple ms-1">{{ stats.REVISAO|default:0 }}</span>
                         </button>
-                        <button type="button" class="btn btn-outline-warning" data-filter="andamento">
+                        <button type="button" class="btn btn-outline-warning" data-filter="em_andamento">
                             <i class="fas fa-spinner me-1"></i>Em Andamento
                             <span class="badge bg-warning ms-1">{{ stats.EM_ANDAMENTO|default:0 }}</span>
                         </button>
-                        <button type="button" class="btn btn-outline-warning" data-filter="pendente">
-                            <i class="fas fa-spinner me-1"></i>Pendente
-                            <span class="badge bg-warning ms-1">{{ stats.PENDENTE|default:0 }}</span>
+                        <button type="button" class="btn btn-outline-orange" data-filter="pendente">
+                            <i class="fas fa-clock me-1"></i>Pendente
+                            <span class="badge bg-orange ms-1">{{ stats.PENDENTE|default:0 }}</span>
                         </button>
                         <button type="button" class="btn btn-outline-danger" data-filter="cancelado">
-                            <i class="fas fa-times-circle me-1"></i>Canceladas
+                            <i class="fas fa-times-circle me-1"></i>Cancelado
                             <span class="badge bg-danger ms-1">{{ stats.CANCELADO|default:0 }}</span>
                         </button>
                     </div>
-                </div>
+                </div> 
             </div>
         </div>
         
@@ -62,7 +66,7 @@
                                     </span>
                                 </div>
                                 <input type="text" class="filter-input form-control form-control-sm mt-1" 
-                                       data-column="0" placeholder="Filtrar ID...">
+                                       data-column="0" placeholder="Filtrar ID..." id="filterId">
                             </th>
                             
                             <!-- Projetista -->
@@ -75,7 +79,7 @@
                                     </span>
                                 </div>
                                 <input type="text" class="filter-input form-control form-control-sm mt-1" 
-                                       data-column="1" placeholder="Filtrar nome...">
+                                       data-column="1" placeholder="Filtrar nome..." id="filterProjetista">
                             </th>
                             
                             <!-- Tipo de Projeto -->
@@ -87,7 +91,7 @@
                                         <i class="fas fa-sort sort-icon ms-auto" data-column="2"></i>
                                     </span>
                                 </div>
-                                <select class="filter-select form-select form-select-sm mt-1" data-column="2">
+                                <select class="filter-select form-select form-select-sm mt-1" data-column="2" id="filterTipo">
                                     <option value="">Todos os tipos</option>
                                     {% for tipo in tipos_projeto %}
                                         <option value="{{ tipo.nome }}">{{ tipo.nome }}</option>
@@ -104,7 +108,7 @@
                                         <i class="fas fa-sort sort-icon ms-auto" data-column="3"></i>
                                     </span>
                                 </div>
-                                <select class="filter-select form-select form-select-sm mt-1" data-column="3">
+                                <select class="filter-select form-select form-select-sm mt-1" data-column="3" id="filterStatus">
                                     <option value="">Todos</option>
                                     <option value="Concluído">Concluído</option>
                                     <option value="Em andamento">Em andamento</option>
@@ -130,7 +134,7 @@
                                 </div>
                             </th>
                             
-                            <!-- Motivo -->
+                            <!-- Observações -->
                             <th>
                                 <div class="filter-header">
                                     <span class="d-flex align-items-center">
@@ -139,8 +143,7 @@
                                         <i class="fas fa-sort sort-icon ms-auto" data-column="5"></i>
                                     </span>
                                 </div>
-                                <input type="text" class="filter-input form-control form-control-sm mt-1" 
-                                       data-column="5" placeholder="Filtrar...">
+                                
                             </th>
                             
                             <!-- Ações -->
@@ -150,6 +153,11 @@
                                         <i class="fas fa-history me-1"></i> 
                                         <span>Detalhes</span>
                                     </span>
+                                </div>
+                                <div class="mt-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="resetFilters">
+                                        <i class="fas fa-redo"></i> Limpar
+                                    </button>
                                 </div>
                             </th>
                         </tr>
@@ -161,9 +169,17 @@
                         <tr class="production-row 
                             {% if producao.status == 'CONCLUIDO' %}row-completed
                             {% elif producao.status == 'CANCELADO' %}row-cancelled
+                            {% elif producao.status == 'REVISAO' %}row-review
+                            {% elif producao.status == 'PENDENTE' %}row-pending
                             {% endif %}"
                             data-status="{{ producao.status|lower }}"
-                            data-id="{{ producao.id }}">
+                            data-id="{{ producao.id }}"
+                            data-dc-id="{{ producao.dc_id|lower }}"
+                            data-projetista="{% if producao.projetista %}{{ producao.projetista.get_short_name|default:producao.projetista.username|lower }}{% endif %}"
+                            data-tipo="{% if producao.tipo_projeto %}{{ producao.tipo_projeto.nome|lower }}{% endif %}"
+                            data-status-display="{% if producao.status == 'CONCLUIDO' %}Concluído{% elif producao.status == 'EM_ANDAMENTO' %}Em andamento{% elif producao.status == 'REVISAO' %}Revisão{% elif producao.status == 'PENDENTE' %}Pendente{% elif producao.status == 'CANCELADO' %}Cancelado{% endif %}"
+                            data-data-inicio="{{ producao.data_inicio|date:'Y-m-d' }}"
+                            data-observacoes="{{ producao.observacoes|default:''|lower }} {{ producao.motivo_status|default:''|lower }}">
                             
                             <!-- DC/ID -->
                             <td class="align-middle">
@@ -525,315 +541,6 @@
     </div>
 </div>
 
-<style>
-.productions-dashboard {
-    margin: 2rem 0;
-}
-
-/* Estilos das linhas por status */
-.row-completed {
-    background-color: rgba(25, 135, 84, 0.05) !important;
-    border-left: 4px solid #198754;
-}
-
-.row-cancelled {
-    background-color: rgba(220, 53, 69, 0.05) !important;
-    border-left: 4px solid #dc3545;
-}
-
-.production-row:hover {
-    background-color: rgba(67, 97, 238, 0.03) !important;
-    transform: translateY(-1px);
-    transition: all 0.3s ease;
-}
-
-/* Avatar do usuário */
-.user-avatar {
-    width: 36px;
-    height: 36px;
-    background: linear-gradient(135deg, #4361ee, #3a0ca3);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-/* Badges de status */
-.status-badge {
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    border: 1px solid transparent;
-}
-
-.status-completed {
-    background-color: rgba(25, 135, 84, 0.15);
-    color: #198754;
-    border-color: rgba(25, 135, 84, 0.3);
-}
-
-.status-in-progress {
-    background-color: rgba(250, 250, 106, 0.15);
-    color: #cccc20;
-    border-color: rgba(140, 157, 40, 0.3);
-}
-
-.status-review {
-    background-color: rgba(250, 135, 229, 0.15);
-    color: #b917b4;
-    border-color: rgba(121, 18, 94, 0.3);
-}
-
-.status-pending {
-    background-color: rgba(251, 195, 117, 0.15);
-    color: #dc7616;
-    border-color: rgba(169, 101, 23, 0.3);
-}
-
-.status-cancelled {
-    background-color: rgba(220, 53, 69, 0.15);
-    color: #dc3545;
-    border-color: rgba(220, 53, 69, 0.3);
-}
-
-/* Indicadores de tempo */
-.time-success {
-    color: #198754;
-    font-size: 0.8rem;
-}
-
-.time-in-progress {
-    color: #0d6efd;
-    font-size: 0.8rem;
-}
-
-.time-cancelled {
-    color: #dc3545;
-    font-size: 0.8rem;
-}
-
-/* Container do histórico */
-.historico-container {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-top: 1px solid #dee2e6;
-    border-bottom: 1px solid #dee2e6;
-}
-
-/* Timeline do histórico */
-.timeline {
-    position: relative;
-    padding-left: 2rem;
-}
-
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: 1.5rem;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #dee2e6;
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 1.5rem;
-    padding-left: 1rem;
-}
-
-.timeline-marker {
-    position: absolute;
-    left: -1.75rem;
-    top: 0;
-    width: 2rem;
-    height: 2rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: white;
-    border: 2px solid #dee2e6;
-    z-index: 1;
-}
-
-.timeline-success .timeline-marker {
-    color: #198754;
-    border-color: #198754;
-}
-
-.timeline-danger .timeline-marker {
-    color: #dc3545;
-    border-color: #dc3545;
-}
-
-.timeline-primary .timeline-marker {
-    color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-.timeline-content {
-    background: white;
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    border: 1px solid #e9ecef;
-}
-
-/* Icon wrapper para resumo */
-.icon-wrapper {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Badge DC/ID */
-.dc-id-badge {
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-}
-
-.dc-id {
-    color: #4361ee;
-    font-family: 'Courier New', monospace;
-}
-
-/* Filtros rápidos */
-.quick-filters .btn.active {
-    background-color: #0d6efd;
-    color: white;
-    border-color: #0d6efd;
-}
-
-/* Campos de filtro */
-.filter-header {
-    padding: 0.5rem 0;
-}
-
-.filter-input, .filter-select {
-    font-size: 0.85rem;
-}
-
-/* Estados vazios */
-.empty-state {
-    padding: 3rem 1rem;
-    text-align: center;
-    color: #6c757d;
-}
-
-.empty-state i {
-    opacity: 0.5;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .quick-filters .btn-group {
-        flex-wrap: wrap;
-    }
-    
-    .production-table th:nth-child(5),
-    .production-table td:nth-child(5) {
-        display: none;
-    }
-    
-    .dc-id-badge {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.9rem;
-    }
-    
-    .status-badge {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.8rem;
-    }
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Filtros rápidos por status
-    const quickFilterButtons = document.querySelectorAll('[data-filter]');
-    quickFilterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Remover classe active de todos os botões
-            quickFilterButtons.forEach(btn => btn.classList.remove('active'));
-            
-            // Adicionar classe active ao botão clicado
-            this.classList.add('active');
-            
-            const filter = this.dataset.filter;
-            filterTableByStatus(filter);
-        });
-    });
-    
-    // Função para filtrar tabela por status
-    function filterTableByStatus(status) {
-        const rows = document.querySelectorAll('.production-row');
-        
-        rows.forEach(row => {
-            if (status === 'all') {
-                row.style.display = '';
-            } else {
-                const rowStatus = row.dataset.status;
-                if (rowStatus === status) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            }
-            
-            // Esconder também as linhas de histórico correspondentes
-            const historicoRow = row.nextElementSibling;
-            if (historicoRow && historicoRow.classList.contains('historico-row')) {
-                historicoRow.style.display = row.style.display;
-            }
-        });
-    }
-    
-    // Filtro por data
-    const filterStartDate = document.getElementById('filterStartDate');
-    const filterEndDate = document.getElementById('filterEndDate');
-    
-    if (filterStartDate && filterEndDate) {
-        filterStartDate.addEventListener('change', filterByDateRange);
-        filterEndDate.addEventListener('change', filterByDateRange);
-    }
-    
-    function filterByDateRange() {
-        const startDate = filterStartDate.value;
-        const endDate = filterEndDate.value;
-        
-        // Implementar lógica de filtro por data aqui
-        console.log('Filtrar por data:', startDate, 'até', endDate);
-    }
-    
-    // Ordenação da tabela
-    const sortIcons = document.querySelectorAll('.sort-icon');
-    sortIcons.forEach(icon => {
-        icon.addEventListener('click', function() {
-            const column = this.dataset.column;
-            sortTable(column);
-        });
-    });
-    
-    function sortTable(column) {
-        // Implementar lógica de ordenação aqui
-        console.log('Ordenar pela coluna:', column);
-    }
-    
-    // Inicializar tooltips do Bootstrap
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-});
-</script>
+{% block extra_js %}
+    <script src="{% static 'js/components/todas_producoes.js' %}"></script>
+{% endblock %}
