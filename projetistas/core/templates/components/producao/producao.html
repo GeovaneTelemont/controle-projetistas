@@ -1,0 +1,873 @@
+{% load static %}
+<!-- Tabela de Produção - Mantendo Layout -->
+<div class="card border-0 shadow-sm">
+    <!-- Cabeçalho do Card com Botão para Novo Projeto -->
+    <div class="card-header border-0" style="background: linear-gradient(135deg, #4361ee, #3a56d4);">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-white">
+                <i class="fas fa-industry me-2"></i>Produção
+                <small class="ms-2 opacity-75">
+                    (Ativos: {{ producoes_andamento|add:producoes_pendentes }} | 
+                    Inativos Recentes: {{ total_inativas }})
+                </small>
+            </h5>
+            <div>
+                <button type="button" 
+                        class="btn btn-light btn-sm me-2" 
+                        onclick="abrirModalNovoProjeto()"
+                        style="border-radius: 8px;">
+                    <i class="fas fa-plus-circle me-2"></i>Inserir Novo Projeto
+                </button>
+                {% if total_inativas > 0 %}
+                <a href="#inativos" class="btn btn-outline-light btn-sm" data-bs-toggle="tab">
+                    <i class="fas fa-archive me-2"></i>Ver Todos Inativos
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #f8f9fa;">
+                    <tr>
+                        <th class="border-0" style="width: 15%;">DC/ID</th>
+                        <th class="border-0" style="width: 10%;">Data</th>
+                        <th class="border-0" style="width: 15%;">Tipo</th>
+                        <th class="border-0" style="width: 12%;">Categoria</th>
+                        <th class="border-0" style="width: 10%;">Metragem</th>
+                        <th class="border-0" style="width: 12%;">Status</th>
+                        <th class="border-0 text-center" style="width: 20%;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaProducao">
+                    {% if producoes %}
+                        {% for producao in producoes %}
+                        <tr class="border-bottom {% if producao.status == 'CONCLUIDO' or producao.status == 'CANCELADO' %}table-inactive{% endif %}" 
+                            style="cursor: pointer;"
+                            data-status="{{ producao.status }}"
+                            data-id="{{ producao.id }}">
+                            
+                            <!-- DC/ID - Click para editar -->
+                            <td data-bs-toggle="modal" data-bs-target="#editarDCIDModal{{ producao.id }}">
+                                <span class="badge bg-light text-dark border" style="font-size: 0.85rem;">
+                                    <i class="fas fa-hashtag me-1"></i>{{ producao.dc_id }}
+                                </span>
+                            </td>
+                            
+                            <!-- Data - APENAS VISUALIZAÇÃO (não clicável) -->
+                            <td style="cursor: default;">
+                                <div class="d-flex align-items-center">
+                                    <i class="far fa-calendar text-primary me-2"></i>
+                                    <span>{{ producao.data|date:"d/m/Y" }}</span>
+                                </div>
+                            </td>
+                            
+                            <!-- Tipo - Click para editar -->
+                            <td data-bs-toggle="modal" data-bs-target="#editarTipoModal{{ producao.id }}">
+                                <div class="d-flex align-items-center">
+                                    {% if producao.tipo_projeto.nome == "Instalação" %}
+                                    <i class="fas fa-wrench text-primary me-2"></i>
+                                    {% elif producao.tipo_projeto.nome == "Manutenção" %}
+                                    <i class="fas fa-tools text-warning me-2"></i>
+                                    {% elif producao.tipo_projeto.nome == "Expansão" %}
+                                    <i class="fas fa-expand-arrows-alt text-success me-2"></i>
+                                    {% else %}
+                                    <i class="fas fa-project-diagram text-info me-2"></i>
+                                    {% endif %}
+                                    <span>{{ producao.tipo_projeto.nome }}</span>
+                                </div>
+                            </td>
+                            
+                            <!-- Categoria - Click para editar -->
+                            <td data-bs-toggle="modal" data-bs-target="#editarCategoriaModal{{ producao.id }}">
+                                <span class="badge bg-light-blue text-dark border" 
+                                      style="background-color: #e3f2fd; font-size: 0.8rem;">
+                                    {{ producao.categoria.nome }}
+                                </span>
+                            </td>
+                            
+                            <!-- Metragem - Click para editar -->
+                            <td data-bs-toggle="modal" data-bs-target="#editarMetragemModal{{ producao.id }}">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-ruler-combined text-muted me-2"></i>
+                                    <span class="fw-medium">{{ producao.metragem_cabo|default:"0.00" }}m</span>
+                                </div>
+                            </td>
+                            
+                            <!-- Status - Click para editar -->
+                            <td data-bs-toggle="modal" data-bs-target="#editarStatusModal{{ producao.id }}">
+                                {% if producao.status == 'CANCELADO' %}
+                                <span class="badge status-badge status-cancelado-inactive" style="font-size: 0.75rem; padding: 0.35em 0.65em;">
+                                    <i class="fas fa-times-circle me-1"></i>Cancelado
+                                </span>
+                                {% elif producao.status == 'PENDENTE' %}
+                                <span class="badge status-badge status-pendente" style="font-size: 0.75rem; padding: 0.35em 0.65em;">
+                                    <i class="fas fa-clock me-1"></i>Pendente
+                                </span>
+                                {% elif producao.status == 'EM_ANDAMENTO' %}
+                                <span class="badge status-badge status-andamento" style="font-size: 0.75rem; padding: 0.35em 0.65em;">
+                                    <i class="fas fa-spinner fa-pulse me-1"></i>Em Andamento
+                                </span>
+                                {% elif producao.status == 'REVISAO' %}
+                                <span class="badge status-badge status-revisao" style="font-size: 0.75rem; padding: 0.35em 0.65em;">
+                                    <i class="fas fa-search me-1"></i>Revisão
+                                </span>
+                                {% elif producao.status == 'CONCLUIDO' %}
+                                <span class="badge status-badge status-concluido-inactive" style="font-size: 0.75rem; padding: 0.35em 0.65em;">
+                                    <i class="fas fa-check-circle me-1"></i>Concluído
+                                </span>
+                                {% else %}
+                                <span class="badge bg-light text-dark" style="font-size: 0.75rem; padding: 0.35em 0.65em;">
+                                    <i class="fas fa-question-circle me-1"></i>{{ producao.status }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Ações - Não é clicável -->
+                            <td class="text-center" style="cursor: default;">
+                                <div class="btn-group" role="group" aria-label="Ações">
+                                    <!-- Botão Editar Completo -->
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-primary btn-action" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editarCompletoModal{{ producao.id }}"
+                                            title="Editar Completo">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    
+                                    <!-- Botão Inativar/Reativar -->
+                                    {% if producao.status == 'CONCLUIDO' or producao.status == 'CANCELADO' %}
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-success btn-action" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#reativarModal{{ producao.id }}"
+                                            title="Reativar Projeto">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                    {% else %}
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-secondary btn-action" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#inativarModal{{ producao.id }}"
+                                            title="Marcar como Inativo">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- ========== MODAIS PARA EDIÇÃO INDIVIDUAL ========== -->
+                        
+                        <!-- Modal para editar DC/ID -->
+                        <div class="modal fade" id="editarDCIDModal{{ producao.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-sm">
+                                <div class="modal-content">
+                                    <form method="post" action="{% url 'producao' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                        
+                                        <div class="modal-header bg-primary text-white">
+                                            <h6 class="modal-title">
+                                                <i class="fas fa-hashtag me-2"></i>Editar DC/ID
+                                            </h6>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Novo DC/ID</label>
+                                                <input type="text" name="dc_id" class="form-control" 
+                                                       value="{{ producao.dc_id }}" required>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" name="editar_dc_id" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-save me-1"></i>Salvar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Modal para editar Tipo -->
+                        <div class="modal fade" id="editarTipoModal{{ producao.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-sm">
+                                <div class="modal-content">
+                                    <form method="post" action="{% url 'producao' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                        
+                                        <div class="modal-header bg-primary text-white">
+                                            <h6 class="modal-title">
+                                                <i class="fas fa-project-diagram me-2"></i>Editar Tipo
+                                            </h6>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Novo Tipo</label>
+                                                <select name="tipo_projeto" class="form-select" required>
+                                                    {% for tipo in tipos_projeto %}
+                                                        <option value="{{ tipo.id }}" 
+                                                                {% if producao.tipo_projeto.id == tipo.id %}selected{% endif %}>
+                                                            {{ tipo.nome }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" name="editar_tipo" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-save me-1"></i>Salvar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Modal para editar Categoria -->
+                        <div class="modal fade" id="editarCategoriaModal{{ producao.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-sm">
+                                <div class="modal-content">
+                                    <form method="post" action="{% url 'producao' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                        
+                                        <div class="modal-header bg-primary text-white">
+                                            <h6 class="modal-title">
+                                                <i class="fas fa-tags me-2"></i>Editar Categoria
+                                            </h6>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Nova Categoria</label>
+                                                <select name="categoria" class="form-select" required>
+                                                    {% for cat in categorias %}
+                                                        <option value="{{ cat.id }}" 
+                                                                {% if producao.categoria.id == cat.id %}selected{% endif %}>
+                                                            {{ cat.nome }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" name="editar_categoria" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-save me-1"></i>Salvar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Modal para editar Metragem -->
+                        <div class="modal fade" id="editarMetragemModal{{ producao.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-sm">
+                                <div class="modal-content">
+                                    <form method="post" action="{% url 'producao' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                        
+                                        <div class="modal-header bg-primary text-white">
+                                            <h6 class="modal-title">
+                                                <i class="fas fa-ruler-combined me-2"></i>Editar Metragem
+                                            </h6>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Nova Metragem (m)</label>
+                                                <input type="number" name="metragem_cabo" class="form-control" 
+                                                       step="0.01" min="0" value="{{ producao.metragem_cabo|default:'0.00' }}">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" name="editar_metragem" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-save me-1"></i>Salvar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Modal para editar Status -->
+                        <div class="modal fade" id="editarStatusModal{{ producao.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-sm">
+                                <div class="modal-content">
+                                    <form method="post" action="{% url 'producao' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                        
+                                        <div class="modal-header bg-primary text-white">
+                                            <h6 class="modal-title">
+                                                <i class="fas fa-exchange-alt me-2"></i>Alterar Status
+                                            </h6>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Novo Status</label>
+                                                <select name="status" class="form-select" required>
+                                                    {% for status_value, status_label in status_choices %}
+                                                        <option value="{{ status_value }}" 
+                                                                {% if producao.status == status_value %}selected{% endif %}>
+                                                            {{ status_label }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Motivo da Alteração</label>
+                                                <textarea name="motivo_status" class="form-control" rows="2" 
+                                                          placeholder="Descreva o motivo...">{{ producao.motivo_status|default:'' }}</textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" name="editar_status" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-save me-1"></i>Salvar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- ========== MODAIS DE AÇÕES ========== -->
+                        
+                        <!-- Modal para Edição Completa -->
+                        <div class="modal fade" id="editarCompletoModal{{ producao.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="post" action="{% url 'producao' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                        
+                                        <div class="modal-header bg-primary text-white">
+                                            <h5 class="modal-title">
+                                                <i class="fas fa-edit me-2"></i>Edição Completa
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">DC/ID</label>
+                                            <input type="text" name="dc_id" class="form-control" 
+                                                   value="{{ producao.dc_id }}" required>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Tipo</label>
+                                                <select name="tipo_projeto" class="form-select" required>
+                                                    {% for tipo in tipos_projeto %}
+                                                        <option value="{{ tipo.id }}" 
+                                                                {% if producao.tipo_projeto.id == tipo.id %}selected{% endif %}>
+                                                            {{ tipo.nome }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Categoria</label>
+                                                <select name="categoria" class="form-select" required>
+                                                    {% for cat in categorias %}
+                                                        <option value="{{ cat.id }}" 
+                                                                {% if producao.categoria.id == cat.id %}selected{% endif %}>
+                                                            {{ cat.nome }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Metragem (m)</label>
+                                                <input type="number" name="metragem_cabo" class="form-control" 
+                                                       step="0.01" min="0" value="{{ producao.metragem_cabo|default:'0.00' }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Status</label>
+                                                <select name="status" class="form-select" required>
+                                                    {% for status_value, status_label in status_choices %}
+                                                        <option value="{{ status_value }}" 
+                                                                {% if producao.status == status_value %}selected{% endif %}>
+                                                            {{ status_label }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Observações</label>
+                                            <textarea name="observacoes" class="form-control" rows="3">{{ producao.observacoes|default:'' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" name="editar_completo" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>Salvar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal para Inativar (Excluir) -->
+                    <div class="modal fade" id="inativarModal{{ producao.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-warning text-dark">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-ban me-2"></i>Marcar como Inativo
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="post" action="{% url 'producao' %}" id="formInativar{{ producao.id }}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                    
+                                    <div class="modal-body">
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            <strong>Atenção!</strong> Esta ação não exclui o projeto, apenas marca como inativo.
+                                        </div>
+                                        <p>Selecione o status para inativar:</p>
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="status_inativar" 
+                                                       id="cancelado{{ producao.id }}" value="CANCELADO" checked>
+                                                <label class="form-check-label" for="cancelado{{ producao.id }}">
+                                                    <span class="badge status-cancelado">Cancelado</span> - Projeto foi cancelado
+                                                </label>
+                                            </div>
+                                            <div class="form-check mt-2">
+                                                <input class="form-check-input" type="radio" name="status_inativar" 
+                                                       id="concluido{{ producao.id }}" value="CONCLUIDO">
+                                                <label class="form-check-label" for="concluido{{ producao.id }}">
+                                                    <span class="badge status-concluido">Concluído</span> - Projeto foi finalizado
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Motivo</label>
+                                            <textarea name="motivo_inativar" class="form-control" rows="3" 
+                                                      placeholder="Descreva o motivo para inativação..." required></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" name="inativar_producao" class="btn btn-warning">
+                                            <i class="fas fa-ban me-2"></i>Marcar como Inativo
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal para Reativar -->
+                    <div class="modal fade" id="reativarModal{{ producao.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-redo me-2"></i>Reativar Projeto
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="post" action="{% url 'producao' %}" id="formReativar{{ producao.id }}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                    
+                                    <div class="modal-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Esta ação reativará o projeto para edição.
+                                        </div>
+                                        <p>Selecione o novo status:</p>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Novo Status</label>
+                                            <select name="status_reativar" class="form-select" required>
+                                                <option value="PENDENTE">Pendente</option>
+                                                <option value="EM_ANDAMENTO" selected>Em Andamento</option>
+                                                <option value="REVISAO">Revisão</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Motivo da Reativação</label>
+                                            <textarea name="motivo_reativar" class="form-control" rows="3" 
+                                                      placeholder="Descreva o motivo para reativação..." required></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" name="reativar_producao" class="btn btn-success">
+                                            <i class="fas fa-redo me-2"></i>Reativar Projeto
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="fas fa-inbox fa-3x text-muted opacity-25"></i>
+                        </div>
+                        <h5 class="text-muted mb-2">Nenhuma produção encontrada</h5>
+                        <p class="text-muted mb-4">Você ainda não possui produções cadastradas.</p>
+                        <button type="button" class="btn btn-primary" onclick="abrirModalNovoProjeto()">
+                            <i class="fas fa-plus me-2"></i>Adicionar Primeira Produção
+                        </button>
+                    </td>
+                </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Indicador visual de ordenação -->
+        <div class="card-footer bg-light border-0 py-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <span id="contadorAtivos">{{ producoes_andamento|add:producoes_pendentes }}</span> ativos 
+                    | <span id="contadorInativos">{{ total_inativas }}</span> inativos recentes
+                </small>
+                <small class="text-muted">
+                    <i class="fas fa-sort me-1"></i>
+                    Ordenação: Ativos primeiro → Inativos recentes
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Adicionar Novo Projeto -->
+<div class="modal fade" id="adicionarProducaoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'producao' %}">
+                {% csrf_token %}
+                
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus-circle me-2"></i>Novo Projeto
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Status será EM_ANDAMENTO por padrão -->
+                    <input type="hidden" name="status" value="EM_ANDAMENTO">
+                    <!-- Motivo será "Iniciando projeto" por padrão -->
+                    <input type="hidden" name="motivo_status" value="Iniciando projeto">
+                    <!-- Data será a data atual automaticamente -->
+                    <input type="hidden" name="data" value="{% now 'Y-m-d' %}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">DC/ID do Projeto *</label>
+                        <input type="text" name="dc_id" class="form-control" required 
+                               placeholder="Ex: DC-2024-001">
+                        <div class="form-text">Identificador único do projeto</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data de Criação</label>
+                            <input type="text" class="form-control" 
+                                   value="{% now 'd/m/Y' %}" readonly
+                                   style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <div class="form-text">Data preenchida automaticamente</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo de Projeto *</label>
+                            <select name="tipo_projeto" class="form-select" required>
+                                <option value="">Selecione...</option>
+                                {% for tipo in tipos_projeto %}
+                                    <option value="{{ tipo.id }}">{{ tipo.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Categoria *</label>
+                            <select name="categoria" class="form-select" required>
+                                <option value="">Selecione...</option>
+                                {% for categoria in categorias %}
+                                    <option value="{{ categoria.id }}">{{ categoria.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Metragem de Cabo (m)</label>
+                            <input type="number" name="metragem_cabo" class="form-control" 
+                                   step="0.01" min="0" value="0.00">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea name="observacoes" class="form-control" rows="3" 
+                                  placeholder="Observações sobre a produção..."></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <div class="d-flex">
+                            <i class="fas fa-info-circle me-2 mt-1"></i>
+                            <div>
+                                <small>
+                                    <strong>Informação:</strong><br>
+                                    • Status padrão: <span class="badge status-andamento">EM ANDAMENTO</span><br>
+                                    • Motivo padrão: "Iniciando projeto"<br>
+                                    • Data: preenchida automaticamente<br>
+                                    • Campos marcados com * são obrigatórios.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" name="nova_producao" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Salvar Projeto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para linhas inativas */
+.table-inactive {
+    opacity: 0.7;
+    background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+.table-inactive:hover {
+    opacity: 0.9;
+    background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Separador visual entre ativos e inativos */
+.separador-inativos {
+    border-top: 2px dashed #dee2e6;
+    position: relative;
+}
+
+.separador-inativos::before {
+    content: "Inativos Recentes";
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 0 10px;
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Cores dos status */
+.status-cancelado {
+    background-color: #dc3545 !important;  /* Vermelho */
+    color: white !important;
+    border: 1px solid #dc3545;
+}
+
+.status-cancelado-inactive {
+    background-color: rgba(220, 53, 69, 0.6) !important;  /* Vermelho opaco */
+    color: white !important;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.status-pendente {
+    background-color: #fd7e14 !important;  /* Laranja */
+    color: white !important;
+    border: 1px solid #fd7e14;
+}
+
+.status-andamento {
+    background-color: #ffc107 !important;  /* Amarelo */
+    color: #212529 !important;
+    border: 1px solid #ffc107;
+}
+
+.status-revisao {
+    background-color: #6f42c1 !important;  /* Roxo */
+    color: white !important;
+    border: 1px solid #6f42c1;
+}
+
+.status-concluido {
+    background-color: #198754 !important;  /* Verde */
+    color: white !important;
+    border: 1px solid #198754;
+}
+
+.status-concluido-inactive {
+    background-color: rgba(25, 135, 84, 0.6) !important;  /* Verde opaco */
+    color: white !important;
+    border: 1px solid rgba(25, 135, 84, 0.3);
+}
+
+/* Botões de ação */
+.btn-action {
+    border-radius: 6px !important;
+    padding: 0.375rem 0.75rem;
+    margin: 0 2px;
+    transition: all 0.2s ease;
+    border-width: 1px;
+}
+
+.btn-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-action.btn-outline-primary:hover {
+    background-color: #4361ee;
+    color: white;
+}
+
+.btn-action.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-action.btn-outline-success:hover {
+    background-color: #198754;
+    color: white;
+}
+
+/* Badges com efeito */
+.status-badge {
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.status-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Efeito de cursor nas células clicáveis */
+td[data-bs-toggle="modal"]:hover {
+    background-color: rgba(67, 97, 238, 0.05) !important;
+}
+
+/* Célula de data não clicável */
+td[style*="cursor: default"]:hover {
+    background-color: transparent !important;
+}
+
+/* Botão com efeito pulsante para status EM_ANDAMENTO */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+.fa-pulse {
+    animation: pulse 1.5s infinite;
+}
+
+/* Botão de inserir novo projeto */
+.btn-light {
+    background-color: white;
+    color: #4361ee;
+    font-weight: 500;
+    border: none;
+}
+
+.btn-light:hover {
+    background-color: #f8f9fa;
+    color: #3a56d4;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+</style>
+
+<script>
+// Função para abrir o modal de novo projeto
+function abrirModalNovoProjeto() {
+    var modal = new bootstrap.Modal(document.getElementById('adicionarProducaoModal'));
+    modal.show();
+    
+    // Focar no primeiro campo após abrir o modal
+    setTimeout(function() {
+        document.querySelector('#adicionarProducaoModal input[name="dc_id"]').focus();
+    }, 500);
+}
+
+// Adiciona tooltips nos botões
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Adiciona evento para reorganizar tabela após reativação/inativação
+    document.querySelectorAll('form[id^="formReativar"], form[id^="formInativar"]').forEach(form => {
+        form.addEventListener('submit', function() {
+            // Armazena a ação para atualizar a interface depois
+            sessionStorage.setItem('atualizarTabela', 'true');
+        });
+    });
+    
+    // Verifica se precisa atualizar a tabela após redirecionamento
+    if (sessionStorage.getItem('atualizarTabela') === 'true') {
+        sessionStorage.removeItem('atualizarTabela');
+        // Recarregar a página para mostrar a nova ordenação
+        setTimeout(() => {
+            window.location.reload();
+        }, 100);
+    }
+});
+
+// Função para atualizar contadores
+function atualizarContadores() {
+    const tabela = document.getElementById('tabelaProducao');
+    const linhas = tabela.querySelectorAll('tr[data-status]');
+    
+    let ativos = 0;
+    let inativos = 0;
+    
+    linhas.forEach(linha => {
+        const status = linha.getAttribute('data-status');
+        if (status === 'CONCLUIDO' || status === 'CANCELADO') {
+            inativos++;
+        } else {
+            ativos++;
+        }
+    });
+    
+    document.getElementById('contadorAtivos').textContent = ativos;
+    document.getElementById('contadorInativos').textContent = inativos;
+}
+
+// Inicializar contadores
+document.addEventListener('DOMContentLoaded', atualizarContadores);
+</script>

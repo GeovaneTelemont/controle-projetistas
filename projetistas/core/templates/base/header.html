@@ -24,18 +24,26 @@
                 
                 <!-- Menu Navegação -->
                 {% if user.is_authenticated %}
+                {% url 'dashboard' as dashboard_url %}
+                {% url 'producao' as producao_url %}
+                {% url 'perfil' as perfil_url %}
+                {% url 'exportar_excel' as exportar_url %}
+                
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'dashboard' %}">
+                        <a class="nav-link {% if request.path == dashboard_url %}active{% endif %}" 
+                           href="{% url 'dashboard' %}">
                             <i class="fas fa-home me-1"></i>Dashboard
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.path == producao_url or '/producao/' in request.path %}active{% endif %}" 
+                           href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-industry me-1"></i>Produção
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-play-circle me-2"></i>Iniciar Produção</a></li>
+                            <li><a class="dropdown-item {% if request.path == producao_url %}active{% endif %}" 
+                                   href="{% url 'producao' %}"><i class="fas fa-play-circle me-2"></i>Iniciar Produção</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-tasks me-2"></i>Ordens Ativas</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-history me-2"></i>Histórico</a></li>
                         </ul>
@@ -105,12 +113,15 @@
                         <ul class="dropdown-menu dropdown-menu-end">
                             {% if user.is_authenticated %}
                                 <li><h6 class="dropdown-header">Minha Conta</h6></li>
-                                <li><a class="dropdown-item" href="{% url 'perfil' %}"><i class="fas fa-user-circle me-2"></i>Meu Perfil</a></li>
+                                <li><a class="dropdown-item {% if request.path == perfil_url %}active{% endif %}" 
+                                       href="{% url 'perfil' %}"><i class="fas fa-user-circle me-2"></i>Meu Perfil</a></li>
                                 <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configurações</a></li>
                                 
                                 {% if user.is_superuser %}
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'exportar_excel' %}"><i class="fas fa-file-excel me-2"></i>Exportar Dados</a></li>
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#exportModal">
+                                    <i class="fas fa-file-excel me-2"></i>Exportar Dados
+                                </a></li>
                                 <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i>Dashboard Admin</a></li>
                                 {% endif %}
                                 
@@ -146,3 +157,38 @@
     </div>
     {% endif %}
 </header>
+
+<!-- Modal de Exportação de Dados -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- Conteúdo do modal (igual ao anterior) -->
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Estilo para itens ativos */
+    .nav-link.active {
+        color: #fff !important;
+        font-weight: 600;
+        background-color: rgba(13, 110, 253, 0.1);
+        border-radius: 4px;
+    }
+    
+    .dropdown-item.active {
+        color: #fff !important;
+        font-weight: 600;
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    
+    /* Remove o sublinhado do hover para itens ativos */
+    .nav-link.active:hover {
+        color: #aac2e7 !important;
+    }
+    
+    /* Ícone ativo */
+    .nav-link.active i {
+        color: #0d6efd;
+    }
+</style>

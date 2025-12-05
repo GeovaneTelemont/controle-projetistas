@@ -23,6 +23,7 @@ from projetistas.core import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.dashboard, name='dashboard'),
+    path('producao/', views.producao , name='producao'),
     
     # URLs de autenticação
     path('login/', views.custom_login, name='login'),

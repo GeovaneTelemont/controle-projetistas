@@ -712,3 +712,292 @@ def calcular_percentual(valor, total):
 def get_item(dictionary, key):
     """Retorna um item de um dicionário pela chave"""
     return dictionary.get(key, 0) 
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.utils import timezone
+from datetime import timedelta
+from django.core.paginator import Paginator
+from .models import Producao, TipoProjeto, Categoria, HistoricoStatus
+
+@login_required
+def producao(request):
+    # Parâmetro para mostrar aba de inativos
+    show_inativos = request.GET.get('show_inativos', False)
+    
+    # Produções do usuário
+    producoes_queryset = Producao.objects.filter(projetista=request.user)
+    
+    # Separar em ativas e inativas para ordenação
+    producoes_ativas = []
+    producoes_inativas_recentes = []
+    
+    for producao in producoes_queryset:
+        if producao.status in ['CONCLUIDO', 'CANCELADO']:
+            # Verificar se foi inativado recentemente (últimas 24h)
+            tempo_inativo = timezone.now() - producao.updated_at
+            if tempo_inativo < timedelta(days=1):
+                producoes_inativas_recentes.append(producao)
+        else:
+            producoes_ativas.append(producao)
+    
+    # Ordenar: Ativos por data (mais recente primeiro), depois inativos recentes
+    producoes_ativas.sort(key=lambda x: x.data, reverse=True)
+    producoes_inativas_recentes.sort(key=lambda x: x.updated_at, reverse=True)
+    
+    # Combinar: ativos primeiro, depois inativos recentes
+    producoes = producoes_ativas + producoes_inativas_recentes
+    
+    # Todas produções inativas (para aba separada)
+    producoes_inativas_todas = Producao.objects.filter(
+        projetista=request.user,
+        status__in=['CONCLUIDO', 'CANCELADO']
+    ).order_by('-updated_at')
+    
+    # Paginação para inativos
+    page = request.GET.get('page', 1)
+    paginator = Paginator(producoes_inativas_todas, 20)
+    try:
+        producoes_inativas_paginadas = paginator.page(page)
+    except:
+        producoes_inativas_paginadas = paginator.page(1)
+    
+    # Contadores
+    producoes_concluidas = len([p for p in producoes_queryset if p.status == 'CONCLUIDO'])
+    producoes_canceladas = len([p for p in producoes_queryset if p.status == 'CANCELADO'])
+    producoes_andamento = len([p for p in producoes_queryset if p.status == 'EM_ANDAMENTO'])
+    producoes_pendentes = len([p for p in producoes_queryset if p.status == 'PENDENTE'])
+    producoes_revisao = len([p for p in producoes_queryset if p.status == 'REVISAO'])
+    
+    tipos_projeto = TipoProjeto.objects.all()
+    categorias = Categoria.objects.all()
+    status_choices = Producao.STATUS_CHOICES
+    
+    if request.method == 'POST':
+        # ========== ADICIONAR NOVA PRODUÇÃO ==========
+        if 'nova_producao' in request.POST:
+            dc_id = request.POST.get('dc_id')
+            data = timezone.now().date()  # Data atual automática
+            tipo_projeto_id = request.POST.get('tipo_projeto')
+            categoria_id = request.POST.get('categoria')
+            metragem_cabo = request.POST.get('metragem_cabo', 0) or 0
+            observacoes = request.POST.get('observacoes', '')
+            
+            if Producao.objects.filter(dc_id=dc_id).exists():
+                messages.error(request, f'O DC/ID {dc_id} já está em uso!')
+            else:
+                try:
+                    producao = Producao.objects.create(
+                        dc_id=dc_id,
+                        data=data,
+                        projetista=request.user,
+                        tipo_projeto_id=tipo_projeto_id,
+                        categoria_id=categoria_id,
+                        metragem_cabo=metragem_cabo,
+                        status='EM_ANDAMENTO',
+                        motivo_status='Iniciando projeto',
+                        observacoes=observacoes
+                    )
+                    messages.success(request, f'Produção {dc_id} criada com sucesso!')
+                    return redirect('producao')
+                except Exception as e:
+                    messages.error(request, f'Erro ao criar produção: {str(e)}')
+        
+        # ========== EDIÇÃO INDIVIDUAL ==========
+        elif 'editar_dc_id' in request.POST:
+            producao_id = request.POST.get('producao_id')
+            producao = get_object_or_404(Producao, id=producao_id, projetista=request.user)
+            
+            novo_dc_id = request.POST.get('dc_id')
+            if novo_dc_id != producao.dc_id and Producao.objects.filter(dc_id=novo_dc_id).exclude(id=producao_id).exists():
+                messages.error(request, f'O DC/ID {novo_dc_id} já está em uso!')
+            else:
+                producao.dc_id = novo_dc_id
+                producao.save()
+                messages.success(request, f'DC/ID atualizado para {novo_dc_id}!')
+                return redirect('producao')
+        
+        elif 'editar_tipo' in request.POST:
+            producao_id = request.POST.get('producao_id')
+            producao = get_object_or_404(Producao, id=producao_id, projetista=request.user)
+            
+            producao.tipo_projeto_id = request.POST.get('tipo_projeto')
+            producao.save()
+            messages.success(request, 'Tipo de projeto atualizado!')
+            return redirect('producao')
+        
+        elif 'editar_categoria' in request.POST:
+            producao_id = request.POST.get('producao_id')
+            producao = get_object_or_404(Producao, id=producao_id, projetista=request.user)
+            
+            producao.categoria_id = request.POST.get('categoria')
+            producao.save()
+            messages.success(request, 'Categoria atualizada!')
+            return redirect('producao')
+        
+        elif 'editar_metragem' in request.POST:
+            producao_id = request.POST.get('producao_id')
+            producao = get_object_or_404(Producao, id=producao_id, projetista=request.user)
+            
+            producao.metragem_cabo = request.POST.get('metragem_cabo', 0) or 0
+            producao.save()
+            messages.success(request, 'Metragem atualizada!')
+            return redirect('producao')
+        
+        elif 'editar_status' in request.POST:
+            producao_id = request.POST.get('producao_id')
+            producao = get_object_or_404(Producao, id=producao_id, projetista=request.user)
+            
+            novo_status = request.POST.get('status')
+            motivo = request.POST.get('motivo_status', '')
+            
+            # Verificar se houve mudança de status
+            if novo_status != producao.status:
+                # Atualizar datas especiais se necessário
+                if novo_status == 'CONCLUIDO' and not producao.data_conclusao:
+                    producao.data_conclusao = timezone.now()
+                elif novo_status == 'CANCELADO' and not producao.data_cancelamento:
+                    producao.data_cancelamento = timezone.now()
+                elif producao.status in ['CONCLUIDO', 'CANCELADO'] and novo_status not in ['CONCLUIDO', 'CANCELADO']:
+                    # Reativando - limpar datas
+                    producao.data_conclusao = None
+                    producao.data_cancelamento = None
+                
+                # Criar histórico
+                HistoricoStatus.objects.create(
+                    producao=producao,
+                    status=novo_status,
+                    motivo=motivo,
+                    usuario=request.user
+                )
+            
+            producao.status = novo_status
+            producao.motivo_status = motivo
+            producao.save()
+            
+            messages.success(request, f'Status atualizado para {producao.get_status_display()}!')
+            return redirect('producao')
+        
+        # ========== EDIÇÃO COMPLETA ==========
+        elif 'editar_completo' in request.POST:
+            producao_id = request.POST.get('producao_id')
+            producao = get_object_or_404(Producao, id=producao_id, projetista=request.user)
+            
+            dc_id = request.POST.get('dc_id')
+            # Verificar se novo DC/ID já existe (se for diferente do atual)
+            if dc_id != producao.dc_id and Producao.objects.filter(dc_id=dc_id).exclude(id=producao_id).exists():
+                messages.error(request, f'O DC/ID {dc_id} já está em uso!')
+            else:
+                novo_status = request.POST.get('status')
+                motivo = request.POST.get('motivo_status', '')
+                
+                # Verificar mudança de status
+                if novo_status != producao.status:
+                    # Atualizar datas
+                    if novo_status == 'CONCLUIDO' and not producao.data_conclusao:
+                        producao.data_conclusao = timezone.now()
+                    elif novo_status == 'CANCELADO' and not producao.data_cancelamento:
+                        producao.data_cancelamento = timezone.now()
+                    elif producao.status in ['CONCLUIDO', 'CANCELADO'] and novo_status not in ['CONCLUIDO', 'CANCELADO']:
+                        producao.data_conclusao = None
+                        producao.data_cancelamento = None
+                    
+                    # Registrar histórico
+                    HistoricoStatus.objects.create(
+                        producao=producao,
+                        status=novo_status,
+                        motivo=motivo,
+                        usuario=request.user
+                    )
+                
+                producao.dc_id = dc_id
+                producao.tipo_projeto_id = request.POST.get('tipo_projeto')
+                producao.categoria_id = request.POST.get('categoria')
+                producao.metragem_cabo = request.POST.get('metragem_cabo', 0) or 0
+                producao.status = novo_status
+                producao.motivo_status = motivo
+                producao.observacoes = request.POST.get('observacoes', '')
+                
+                producao.save()
+                
+                messages.success(request, f'Produção {dc_id} atualizada com sucesso!')
+                return redirect('producao')
+        
+        # ========== INATIVAR PRODUÇÃO ==========
+        elif 'inativar_producao' in request.POST:
+            producao_id = request.POST.get('producao_id')
+            producao = get_object_or_404(Producao, id=producao_id, projetista=request.user)
+            
+            novo_status = request.POST.get('status_inativar')
+            motivo = request.POST.get('motivo_inativar', '')
+            
+            # Registrar histórico
+            HistoricoStatus.objects.create(
+                producao=producao,
+                status=novo_status,
+                motivo=f"Inativado: {motivo}",
+                usuario=request.user
+            )
+            
+            producao.status = novo_status
+            producao.motivo_status = motivo
+            
+            # Atualizar datas se necessário
+            if novo_status == 'CONCLUIDO' and not producao.data_conclusao:
+                producao.data_conclusao = timezone.now()
+            elif novo_status == 'CANCELADO' and not producao.data_cancelamento:
+                producao.data_cancelamento = timezone.now()
+            
+            producao.save()
+            
+            messages.success(request, f'Produção marcada como {producao.get_status_display().lower()}!')
+            return redirect('producao')
+        
+        # ========== REATIVAR PRODUÇÃO ==========
+        elif 'reativar_producao' in request.POST:
+            producao_id = request.POST.get('producao_id')
+            producao = get_object_or_404(Producao, id=producao_id, projetista=request.user)
+            
+            novo_status = request.POST.get('status_reativar')
+            motivo = request.POST.get('motivo_reativar', '')
+            
+            # Registrar histórico
+            HistoricoStatus.objects.create(
+                producao=producao,
+                status=novo_status,
+                motivo=f"Reativado: {motivo}",
+                usuario=request.user
+            )
+            
+            producao.status = novo_status
+            producao.motivo_status = motivo
+            
+            # Limpar datas de conclusão/cancelamento ao reativar
+            if producao.status not in ['CONCLUIDO', 'CANCELADO']:
+                producao.data_conclusao = None
+                producao.data_cancelamento = None
+            
+            producao.save()
+            
+            messages.success(request, f'Produção reativada para {producao.get_status_display().lower()}!')
+            return redirect('producao')
+    
+    context = {
+        'producoes': producoes,  # Ativos + inativos recentes
+        'producoes_inativas': producoes_inativas_paginadas,  # Paginado
+        'producoes_inativas_todas': producoes_inativas_todas,  # Todos inativos
+        'tipos_projeto': tipos_projeto,
+        'categorias': categorias,
+        'status_choices': status_choices,
+        'producoes_concluidas': producoes_concluidas,
+        'producoes_canceladas': producoes_canceladas,
+        'producoes_andamento': producoes_andamento,
+        'producoes_pendentes': producoes_pendentes,
+        'producoes_revisao': producoes_revisao,
+        'total_inativas': producoes_inativas_todas.count(),
+        'show_inativos': show_inativos,
+    }
+    
+    return render(request, 'producao.html', context)

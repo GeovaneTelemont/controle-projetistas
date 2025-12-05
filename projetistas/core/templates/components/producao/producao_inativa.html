@@ -1,0 +1,407 @@
+{% load static %}
+<!-- Componente para Produções Inativas -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header border-0" style="background: linear-gradient(135deg, #6c757d, #495057);">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-white">
+                <i class="fas fa-archive me-2"></i>Produções Inativas
+            </h5>
+            <div>
+                <a href="#producao" class="btn btn-outline-light btn-sm" data-bs-toggle="tab">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar para Ativas
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <!-- Filtros -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-calendar"></i>
+                    </span>
+                    <input type="date" class="form-control" id="filtroDataInicio" placeholder="Data Início">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-calendar"></i>
+                    </span>
+                    <input type="date" class="form-control" id="filtroDataFim" placeholder="Data Fim">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" id="filtroStatus">
+                    <option value="">Todos os status</option>
+                    <option value="CONCLUIDO">Concluídos</option>
+                    <option value="CANCELADO">Cancelados</option>
+                </select>
+            </div>
+        </div>
+        
+        {% if producoes_inativas %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tabelaInativos">
+                <thead style="background-color: #f8f9fa;">
+                    <tr>
+                        <th class="border-0" style="width: 15%;">DC/ID</th>
+                        <th class="border-0" style="width: 10%;">Data Início</th>
+                        <th class="border-0" style="width: 10%;">Data Finalização</th>
+                        <th class="border-0" style="width: 10%;">Duração</th>
+                        <th class="border-0" style="width: 12%;">Status Final</th>
+                        <th class="border-0" style="width: 15%;">Último Motivo</th>
+                        <th class="border-0" style="width: 13%;">Tipo</th>
+                        <th class="border-0" style="width: 10%;">Metragem</th>
+                        <th class="border-0 text-center" style="width: 5%;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producao in producoes_inativas %}
+                    <tr class="border-bottom">
+                        <!-- DC/ID -->
+                        <td>
+                            <span class="badge bg-light text-dark border" style="font-size: 0.85rem;">
+                                <i class="fas fa-hashtag me-1"></i>{{ producao.dc_id }}
+                            </span>
+                        </td>
+                        
+                        <!-- Data Início -->
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="far fa-calendar text-primary me-2"></i>
+                                <small>{{ producao.data_inicio|date:"d/m/Y H:i" }}</small>
+                            </div>
+                        </td>
+                        
+                        <!-- Data Finalização -->
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if producao.status == 'CONCLUIDO' %}
+                                    <i class="far fa-calendar-check text-success me-2"></i>
+                                    <small>{{ producao.data_conclusao|date:"d/m/Y H:i" }}</small>
+                                {% elif producao.status == 'CANCELADO' %}
+                                    <i class="far fa-calendar-times text-danger me-2"></i>
+                                    <small>{{ producao.data_cancelamento|date:"d/m/Y H:i" }}</small>
+                                {% else %}
+                                    <i class="far fa-calendar text-muted me-2"></i>
+                                    <small>-</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        
+                        <!-- Duração -->
+                        <td>
+                            {% if producao.tempo_total %}
+                                {% with total_seconds=producao.tempo_total.total_seconds %}
+                                    {% if total_seconds < 3600 %}
+                                        <span class="badge bg-info">{{ total_seconds|floatformat:0 }}s</span>
+                                    {% elif total_seconds < 86400 %}
+                                        {% widthratio total_seconds 3600 1 as horas %}
+                                        <span class="badge bg-info">{{ horas|floatformat:0 }}h</span>
+                                    {% else %}
+                                        {% widthratio total_seconds 86400 1 as dias %}
+                                        <span class="badge bg-info">{{ dias|floatformat:0 }}d</span>
+                                    {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Status Final -->
+                        <td>
+                            {% if producao.status == 'CANCELADO' %}
+                            <span class="badge status-badge status-cancelado-inactive" style="font-size: 0.75rem; padding: 0.35em 0.65em;">
+                                <i class="fas fa-times-circle me-1"></i>Cancelado
+                            </span>
+                            {% elif producao.status == 'CONCLUIDO' %}
+                            <span class="badge status-badge status-concluido-inactive" style="font-size: 0.75rem; padding: 0.35em 0.65em;">
+                                <i class="fas fa-check-circle me-1"></i>Concluído
+                            </span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Último Motivo -->
+                        <td>
+                            {% with ultimo_historico=producao.historico.last %}
+                                {% if ultimo_historico and ultimo_historico.motivo %}
+                                    <small class="text-muted">{{ ultimo_historico.motivo|truncatechars:50 }}</small>
+                                {% else %}
+                                    <small class="text-muted">-</small>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        
+                        <!-- Tipo -->
+                        <td>
+                            <small>{{ producao.tipo_projeto.nome }}</small>
+                        </td>
+                        
+                        <!-- Metragem -->
+                        <td>
+                            <small>{{ producao.metragem_cabo|default:"0.00" }}m</small>
+                        </td>
+                        
+                        <!-- Ações -->
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <!-- Botão Reativar -->
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-success btn-action" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#reativarModalInativo{{ producao.id }}"
+                                        title="Reativar Projeto">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                
+                                <!-- Botão Histórico Completo -->
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-info btn-action" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#historicoCompletoModal{{ producao.id }}"
+                                        title="Histórico Completo">
+                                    <i class="fas fa-history"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Modal Reativar para Inativos -->
+                    <div class="modal fade" id="reativarModalInativo{{ producao.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-redo me-2"></i>Reativar Projeto
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="post" action="{% url 'producao' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                    
+                                    <div class="modal-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Esta ação reativará o projeto para a produção ativa.
+                                        </div>
+                                        
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h6 class="card-title">{{ producao.dc_id }}</h6>
+                                                <p class="card-text mb-1">
+                                                    <small>
+                                                        Status atual: 
+                                                        {% if producao.status == 'CANCELADO' %}
+                                                        <span class="badge status-cancelado">Cancelado</span>
+                                                        {% else %}
+                                                        <span class="badge status-concluido">Concluído</span>
+                                                        {% endif %}
+                                                        <br>
+                                                        Data de finalização: 
+                                                        {% if producao.status == 'CONCLUIDO' %}
+                                                            {{ producao.data_conclusao|date:"d/m/Y H:i" }}
+                                                        {% elif producao.status == 'CANCELADO' %}
+                                                            {{ producao.data_cancelamento|date:"d/m/Y H:i" }}
+                                                        {% endif %}
+                                                    </small>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Novo Status</label>
+                                            <select name="status_reativar" class="form-select" required>
+                                                <option value="PENDENTE">Pendente</option>
+                                                <option value="EM_ANDAMENTO" selected>Em Andamento</option>
+                                                <option value="REVISAO">Revisão</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Motivo da Reativação</label>
+                                            <textarea name="motivo_reativar" class="form-control" rows="3" 
+                                                      placeholder="Descreva o motivo para reativação..." required></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" name="reativar_producao" class="btn btn-success">
+                                            <i class="fas fa-redo me-2"></i>Reativar Projeto
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Histórico Completo -->
+                    <div class="modal fade" id="historicoCompletoModal{{ producao.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header bg-info text-white">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-history me-2"></i>Histórico Completo - {{ producao.dc_id }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row mb-4">
+                                        <div class="col-md-6">
+                                            <small class="text-muted">Data de início:</small>
+                                            <p class="mb-0">{{ producao.data_inicio|date:"d/m/Y H:i" }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted">Data de finalização:</small>
+                                            <p class="mb-0">
+                                                {% if producao.status == 'CONCLUIDO' %}
+                                                    {{ producao.data_conclusao|date:"d/m/Y H:i" }}
+                                                {% elif producao.status == 'CANCELADO' %}
+                                                    {{ producao.data_cancelamento|date:"d/m/Y H:i" }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if producao.historico.all %}
+                                        <h6 class="border-bottom pb-2 mb-3">Linha do Tempo</h6>
+                                        <div class="timeline">
+                                            {% for registro in producao.historico.all|dictsortreversed:"data_alteracao" %}
+                                            <div class="timeline-item mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="flex-grow-1 me-3">
+                                                        <div class="d-flex align-items-center mb-1">
+                                                            <span class="badge 
+                                                                {% if registro.status == 'PENDENTE' %}status-pendente
+                                                                {% elif registro.status == 'EM_ANDAMENTO' %}status-andamento
+                                                                {% elif registro.status == 'REVISAO' %}status-revisao
+                                                                {% elif registro.status == 'CONCLUIDO' %}status-concluido
+                                                                {% elif registro.status == 'CANCELADO' %}status-cancelado
+                                                                {% else %}bg-secondary{% endif %} me-2">
+                                                                {{ registro.get_status_display }}
+                                                            </span>
+                                                            <small class="text-muted">{{ registro.data_alteracao|date:"d/m/Y H:i" }}</small>
+                                                        </div>
+                                                        {% if registro.motivo %}
+                                                        <p class="mb-0">
+                                                            <small>
+                                                                <i class="fas fa-comment me-1 text-muted"></i>
+                                                                {{ registro.motivo }}
+                                                            </small>
+                                                        </p>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <small class="text-muted">
+                                                            {% if registro.usuario %}
+                                                                <i class="fas fa-user me-1"></i>
+                                                                {{ registro.usuario.get_short_name|default:registro.usuario.username }}
+                                                            {% else %}
+                                                                <i class="fas fa-robot me-1"></i>
+                                                                Sistema
+                                                            {% endif %}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center text-muted py-4">
+                                            <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
+                                            <p>Nenhum registro no histórico</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Paginação -->
+        {% if producoes_inativas.paginator.num_pages > 1 %}
+        <nav aria-label="Paginação de inativos" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if producoes_inativas.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page_inativos={{ producoes_inativas.previous_page_number }}#inativos">&laquo;</a>
+                </li>
+                {% endif %}
+                
+                {% for num in producoes_inativas.paginator.page_range %}
+                <li class="page-item {% if producoes_inativas.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page_inativos={{ num }}#inativos">{{ num }}</a>
+                </li>
+                {% endfor %}
+                
+                {% if producoes_inativas.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page_inativos={{ producoes_inativas.next_page_number }}#inativos">&raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5">
+            <div class="mb-3">
+                <i class="fas fa-archive fa-4x text-muted opacity-25"></i>
+            </div>
+            <h5 class="text-muted mb-2">Nenhuma produção inativa encontrada</h5>
+            <p class="text-muted mb-4">Você não possui produções concluídas ou canceladas.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Estilos específicos para tabela de inativos */
+#tabelaInativos tbody tr:hover {
+    background-color: rgba(108, 117, 125, 0.05) !important;
+}
+
+.timeline-item:last-child {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+</style>
+
+<script>
+// Filtros para tabela de inativos
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroDataInicio = document.getElementById('filtroDataInicio');
+    const filtroDataFim = document.getElementById('filtroDataFim');
+    const filtroStatus = document.getElementById('filtroStatus');
+    const tabela = document.getElementById('tabelaInativos');
+    
+    function aplicarFiltros() {
+        const dataInicio = filtroDataInicio.value;
+        const dataFim = filtroDataFim.value;
+        const status = filtroStatus.value;
+        
+        // Aqui você implementaria a lógica de filtragem
+        // Por enquanto, apenas um exemplo de como seria
+        console.log('Filtrando por:', { dataInicio, dataFim, status });
+        
+        // Em uma implementação real, você faria uma requisição AJAX
+        // ou recarregaria a página com os parâmetros de filtro
+    }
+    
+    // Aplicar filtros ao mudar valores
+    [filtroDataInicio, filtroDataFim, filtroStatus].forEach(input => {
+        input.addEventListener('change', aplicarFiltros);
+    });
+});
+</script>

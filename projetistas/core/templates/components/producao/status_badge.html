@@ -1,0 +1,24 @@
+<!-- core/templates/components/status_badge.html -->
+{% if status == 'PENDENTE' %}
+<span class="badge bg-warning text-dark">
+    <i class="fas fa-clock me-1"></i>Pendente
+</span>
+{% elif status == 'EM_ANDAMENTO' %}
+<span class="badge bg-info text-white">
+    <i class="fas fa-spinner me-1"></i>Em Andamento
+</span>
+{% elif status == 'REVISAO' %}
+<span class="badge" style="background-color: #6f42c1; color: white;">
+    <i class="fas fa-search me-1"></i>Revisão
+</span>
+{% elif status == 'CONCLUIDO' %}
+<span class="badge bg-success text-white">
+    <i class="fas fa-check-circle me-1"></i>Concluído
+</span>
+{% elif status == 'CANCELADO' %}
+<span class="badge bg-danger text-white">
+    <i class="fas fa-times-circle me-1"></i>Cancelado
+</span>
+{% else %}
+
+{% endif %}
