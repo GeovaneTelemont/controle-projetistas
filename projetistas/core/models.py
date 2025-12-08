@@ -63,7 +63,7 @@ class Producao(models.Model):
     projetista = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name='Projetista')
     tipo_projeto = models.ForeignKey(TipoProjeto, on_delete=models.PROTECT, verbose_name='Tipo de Projeto')
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, verbose_name='Categoria')
-    dc_id = models.CharField('DC/ID', max_length=50, unique=True)
+    dc_id = models.CharField('DC/ID', max_length=50)
     metragem_cabo = models.DecimalField('Metragem de Cabo', max_digits=10, decimal_places=2, default=0.0)
     status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='PENDENTE')
     motivo_status = models.CharField('Motivo/Observação do Status', max_length=255, blank=True, help_text='Ex: Motivo da pendência, do cancelamento ou em que etapa está o andamento.')
@@ -186,3 +186,79 @@ class HistoricoStatus(models.Model):
         if not self.usuario and hasattr(self, '_request_user'):
             self.usuario = self._request_user
         super().save(*args, **kwargs)
+
+
+class RegistroExclusao(models.Model):
+    """
+    Modelo para registrar exclusões de projetos.
+    Armazena informações antes da exclusão permanente.
+    """
+    # Informações básicas do projeto
+    dc_id = models.CharField('DC/ID', max_length=50)
+    projeto_id_original = models.IntegerField('ID Original do Projeto')
+    
+    # Informações do projeto
+    data_projeto = models.DateField('Data do Projeto')
+    projetista = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True,
+        related_name='exclusoes_realizadas',
+        verbose_name='Projetista'
+    )
+    tipo_projeto = models.CharField('Tipo de Projeto', max_length=100)
+    categoria = models.CharField('Categoria', max_length=100)
+    
+    # Status e métricas
+    status_final = models.CharField('Status Final', max_length=20, choices=Producao.STATUS_CHOICES)
+    metragem_cabo = models.DecimalField('Metragem de Cabo', max_digits=10, decimal_places=2, null=True, blank=True)
+    observacoes_originais = models.TextField('Observações Originais', blank=True)
+    
+    # Histórico resumido
+    total_alteracoes_status = models.IntegerField('Total de Alterações de Status', default=0)
+    tempo_total_atividade = models.DurationField('Tempo Total de Atividade', null=True, blank=True)
+    
+    # Informações da exclusão
+    motivo_exclusao = models.TextField('Motivo da Exclusão')
+    data_exclusao = models.DateTimeField('Data da Exclusão', default=timezone.now)
+    usuario_exclusao = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True,
+        related_name='exclusoes_registradas',
+        verbose_name='Usuário que Excluiu'
+    )
+    
+    # Campos de auditoria
+    ip_address = models.GenericIPAddressField('Endereço IP', null=True, blank=True)
+    user_agent = models.TextField('User Agent', blank=True)
+    
+    class Meta:
+        verbose_name = 'Registro de Exclusão'
+        verbose_name_plural = 'Registros de Exclusão'
+        ordering = ['-data_exclusao']
+        indexes = [
+            models.Index(fields=['dc_id']),
+            models.Index(fields=['data_exclusao']),
+            models.Index(fields=['projetista']),
+            models.Index(fields=['usuario_exclusao']),
+        ]
+    
+    def __str__(self):
+        return f'Exclusão: {self.dc_id} - {self.data_exclusao.strftime("%d/%m/%Y %H:%M")}'
+    
+    def get_tempo_atividade_display(self):
+        """Retorna o tempo de atividade formatado"""
+        if self.tempo_total_atividade:
+            total_seconds = int(self.tempo_total_atividade.total_seconds())
+            dias = total_seconds // 86400
+            horas = (total_seconds % 86400) // 3600
+            minutos = (total_seconds % 3600) // 60
+            
+            if dias > 0:
+                return f"{dias}d {horas}h {minutos}min"
+            elif horas > 0:
+                return f"{horas}h {minutos}min"
+            else:
+                return f"{minutos}min"
+        return "N/A"

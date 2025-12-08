@@ -1,7 +1,7 @@
 {% load static %}
 <!-- Tabela de Produção - Mantendo Layout -->
 <div class="card border-0 shadow-sm">
-    <!-- Cabeçalho do Card com Botão para Novo Projeto -->
+    <!-- Cabeçalho do Card com Botões -->
     <div class="card-header border-0" style="background: linear-gradient(135deg, #4361ee, #3a56d4);">
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0 text-white">
@@ -25,11 +25,46 @@
                 {% endif %}
             </div>
         </div>
+        
+        <!-- NOVO: Filtros e Pesquisa -->
+        <div class="row mt-3 g-2">
+            <div class="col-md-4">
+                <!-- Filtro por Status -->
+                <div class="btn-group w-100" role="group" aria-label="Filtrar por status">
+                    <button type="button" class="btn btn-outline-light active" id="filtroTodos" onclick="filtrarTabela('todos')">
+                        Todos
+                    </button>
+                    <button type="button" class="btn btn-outline-light" id="filtroAtivos" onclick="filtrarTabela('ativos')">
+                        Ativos
+                    </button>
+                    <button type="button" class="btn btn-outline-light" id="filtroInativos" onclick="filtrarTabela('inativos')">
+                        Inativos
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <!-- Pesquisa por DC/ID -->
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="fas fa-search text-primary"></i>
+                    </span>
+                    <input type="text" 
+                           class="form-control border-start-0" 
+                           id="pesquisaDCID" 
+                           placeholder="Pesquisar por DC/ID..."
+                           onkeyup="pesquisarDCID()">
+                    <button class="btn btn-light" type="button" onclick="limparPesquisa()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <small class="text-white mt-1 d-block">Pesquisar por DC/ID</small>
+            </div>
+        </div>
     </div>
     
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" id="tabelaProducaoPrincipal">
                 <thead style="background-color: #f8f9fa;">
                     <tr>
                         <th class="border-0" style="width: 15%;">DC/ID</th>
@@ -47,7 +82,8 @@
                         <tr class="border-bottom {% if producao.status == 'CONCLUIDO' or producao.status == 'CANCELADO' %}table-inactive{% endif %}" 
                             style="cursor: pointer;"
                             data-status="{{ producao.status }}"
-                            data-id="{{ producao.id }}">
+                            data-id="{{ producao.id }}"
+                            data-dcid="{{ producao.dc_id|lower }}">
                             
                             <!-- DC/ID - Click para editar -->
                             <td data-bs-toggle="modal" data-bs-target="#editarDCIDModal{{ producao.id }}">
@@ -151,10 +187,19 @@
                                             class="btn btn-sm btn-outline-secondary btn-action" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#inativarModal{{ producao.id }}"
-                                            title="Marcar como Inativo">
-                                        <i class="fas fa-ban"></i>
+                                            title="Marcar como Concluido">
+                                        <i class="fas fa-check-circle"></i>
                                     </button>
                                     {% endif %}
+                                    
+                                    <!-- Botão Excluir Projeto -->
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger btn-action" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#excluirModal{{ producao.id }}"
+                                            title="Excluir Projeto Permanentemente">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -430,7 +475,7 @@
                             <div class="modal-content">
                                 <div class="modal-header bg-warning text-dark">
                                     <h5 class="modal-title">
-                                        <i class="fas fa-ban me-2"></i>Marcar como Inativo
+                                        <i class="fas fa-check-circle me-2"></i>Marcar como Concluido
                                     </h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
@@ -441,9 +486,9 @@
                                     <div class="modal-body">
                                         <div class="alert alert-warning">
                                             <i class="fas fa-exclamation-triangle me-2"></i>
-                                            <strong>Atenção!</strong> Esta ação não exclui o projeto, apenas marca como inativo.
+                                            <strong>Atenção!</strong> Esta ação não exclui o projeto, apenas marca como concluído.
                                         </div>
-                                        <p>Selecione o status para inativar:</p>
+                                        <p>Selecione o status Cancelado ou Concluído:</p>
                                         
                                         <div class="mb-3">
                                             <div class="form-check">
@@ -465,13 +510,13 @@
                                         <div class="mb-3">
                                             <label class="form-label">Motivo</label>
                                             <textarea name="motivo_inativar" class="form-control" rows="3" 
-                                                      placeholder="Descreva o motivo para inativação..." required></textarea>
+                                                      placeholder="Descreva o motivo se for cancelamento ou caso contrário, deixe em branco..."></textarea>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                                         <button type="submit" name="inativar_producao" class="btn btn-warning">
-                                            <i class="fas fa-ban me-2"></i>Marcar como Inativo
+                                            <i class="fas fa-check-circle me-2"></i>Marcar como Concluido
                                         </button>
                                     </div>
                                 </form>
@@ -525,9 +570,115 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Modal para Excluir Projeto Permanentemente -->
+                    <div class="modal fade" id="excluirModal{{ producao.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-trash me-2"></i>Excluir Projeto
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="post" action="{% url 'producao' %}" id="formExcluir{{ producao.id }}" onsubmit="return validarExclusaoFinal('{{ producao.dc_id }}', '{{ producao.id }}')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                    
+                                    <div class="modal-body">
+                                        <div class="alert alert-danger">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            <strong>ATENÇÃO: AÇÃO IRREVERSÍVEL!</strong><br>
+                                            Esta ação excluirá PERMANENTEMENTE o projeto e todos os seus dados históricos.
+                                            Não será possível recuperar os dados após a exclusão.
+                                        </div>
+                                        
+                                        <div class="card mb-3 border-danger">
+                                            <div class="card-body">
+                                                <h6 class="card-title">{{ producao.dc_id }}</h6>
+                                                <p class="card-text mb-1">
+                                                    <small>
+                                                        <strong>Tipo:</strong> {{ producao.tipo_projeto.nome }}<br>
+                                                        <strong>Categoria:</strong> {{ producao.categoria.nome }}<br>
+                                                        <strong>Status:</strong> 
+                                                        {% if producao.status == 'CANCELADO' %}
+                                                        <span class="badge status-cancelado">Cancelado</span>
+                                                        {% elif producao.status == 'CONCLUIDO' %}
+                                                        <span class="badge status-concluido">Concluído</span>
+                                                        {% else %}
+                                                        <span class="badge bg-secondary">{{ producao.status }}</span>
+                                                        {% endif %}
+                                                        <br>
+                                                        <strong>Início:</strong> {{ producao.data|date:"d/m/Y" }}
+                                                    </small>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Confirme o DC/ID para exclusão</label>
+                                            <input type="text" name="confirmar_dc_id" id="confirmarDCID{{ producao.id }}" 
+                                                   class="form-control" 
+                                                   placeholder="Digite o DC/ID para confirmar" required
+                                                   oninput="validarExclusaoDinamica('{{ producao.dc_id }}', '{{ producao.id }}')">
+                                            <div class="form-text">Digite exatamente: <strong id="dcIdTexto{{ producao.id }}">{{ producao.dc_id }}</strong></div>
+                                            <div id="feedbackDCID{{ producao.id }}" class="invalid-feedback" style="display: none;">
+                                                O DC/ID digitado não confere com o projeto!
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Motivo da Exclusão</label>
+                                            <textarea name="motivo_exclusao" id="motivoExclusao{{ producao.id }}" 
+                                                      class="form-control" rows="3" 
+                                                      placeholder="Descreva o motivo para exclusão permanente..." 
+                                                      required
+                                                      oninput="validarExclusaoDinamica('{{ producao.dc_id }}', '{{ producao.id }}')"></textarea>
+                                            <div id="feedbackMotivo{{ producao.id }}" class="invalid-feedback" style="display: none;">
+                                                Por favor, descreva o motivo da exclusão.
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="confirmar_exclusao" 
+                                                   id="confirmarExclusao{{ producao.id }}" 
+                                                   onchange="validarExclusaoDinamica('{{ producao.dc_id }}', '{{ producao.id }}')">
+                                            <label class="form-check-label text-danger" for="confirmarExclusao{{ producao.id }}">
+                                                <i class="fas fa-exclamation-circle me-1"></i>
+                                                Confirmo que compreendo que esta ação é irreversível e desejo excluir permanentemente este projeto.
+                                            </label>
+                                            <div id="feedbackCheckbox{{ producao.id }}" class="invalid-feedback" style="display: none;">
+                                                Você deve confirmar que compreende que esta ação é irreversível.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" name="excluir_producao" class="btn btn-danger" 
+                                                id="btnExcluir{{ producao.id }}" disabled>
+                                            <i class="fas fa-trash me-2"></i>Excluir Permanentemente
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
                 {% else %}
-                <tr>
+                <tr id="semResultados" style="display: none;">
+                    <td colspan="7" class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="fas fa-search fa-3x text-muted opacity-25"></i>
+                        </div>
+                        <h5 class="text-muted mb-2">Nenhum resultado encontrado</h5>
+                        <p class="text-muted mb-4">Nenhum projeto corresponde aos critérios de pesquisa.</p>
+                        <button type="button" class="btn btn-outline-primary" onclick="limparFiltros()">
+                            <i class="fas fa-times me-2"></i>Limpar Filtros
+                        </button>
+                    </td>
+                </tr>
+                
+                <tr id="nenhumaProducao">
                     <td colspan="7" class="text-center py-4">
                         <div class="mb-3">
                             <i class="fas fa-inbox fa-3x text-muted opacity-25"></i>
@@ -549,8 +700,14 @@
             <div class="d-flex justify-content-between align-items-center">
                 <small class="text-muted">
                     <i class="fas fa-info-circle me-1"></i>
-                    <span id="contadorAtivos">{{ producoes_andamento|add:producoes_pendentes }}</span> ativos 
-                    | <span id="contadorInativos">{{ total_inativas }}</span> inativos recentes
+                    <span id="contadorResultados">
+                        {% if producoes %}
+                            Mostrando <span id="contadorAtivos">{{ producoes_andamento|add:producoes_pendentes }}</span> ativos 
+                            | <span id="contadorInativos">{{ total_inativas }}</span> inativos recentes
+                        {% else %}
+                            Nenhum resultado
+                        {% endif %}
+                    </span>
                 </small>
                 <small class="text-muted">
                     <i class="fas fa-sort me-1"></i>
@@ -690,7 +847,7 @@
     font-weight: 500;
 }
 
-/* Cores dos status */
+/* Cores dos status (MANTIDAS) */
 .status-cancelado {
     background-color: #dc3545 !important;  /* Vermelho */
     color: white !important;
@@ -762,6 +919,11 @@
     color: white;
 }
 
+.btn-action.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
 /* Badges com efeito */
 .status-badge {
     transition: all 0.2s ease;
@@ -808,6 +970,85 @@ td[style*="cursor: default"]:hover {
     transform: translateY(-1px);
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
+
+/* Estilos para validação de exclusão */
+.form-control.is-valid {
+    border-color: #198754 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    padding-right: 2.25rem;
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23dc3545' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    padding-right: 2.25rem;
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-check-input.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.form-check-input.is-invalid:checked {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.btn-danger.disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* Efeito visual para quando o botão está habilitado */
+.btn-danger:not(:disabled):not(.disabled) {
+    animation: pulse-danger 1.5s infinite;
+}
+
+@keyframes pulse-danger {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+/* NOVO: Estilos para botões de filtro ativos */
+.btn-outline-light.active {
+    background-color: white !important;
+    color: #4361ee !important;
+    border-color: white !important;
+    font-weight: 600;
+}
+
+.btn-outline-light:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: white !important;
+}
+
+/* NOVO: Estilos para pesquisa */
+#pesquisaDCID:focus {
+    border-color: #4361ee;
+    box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
+}
+
+/* NOVO: Estilos para indicador de filtro */
+.filtro-ativo {
+    background-color: #e3f2fd !important;
+    border-left: 3px solid #4361ee !important;
+}
+
+/* NOVO: Contador de resultados */
+#contadorResultados {
+    font-weight: 500;
+}
 </style>
 
 <script>
@@ -818,56 +1059,326 @@ function abrirModalNovoProjeto() {
     
     // Focar no primeiro campo após abrir o modal
     setTimeout(function() {
-        document.querySelector('#adicionarProducaoModal input[name="dc_id"]').focus();
+        const input = document.querySelector('#adicionarProducaoModal input[name="dc_id"]');
+        if (input) input.focus();
     }, 500);
 }
 
-// Adiciona tooltips nos botões
+// Variáveis globais para controle de filtros
+let filtroAtual = 'todos';
+let termoPesquisa = '';
+
+// Função para filtrar tabela por status
+function filtrarTabela(tipo) {
+    filtroAtual = tipo;
+    
+    // Atualizar botões ativos
+    const botaoTodos = document.getElementById('filtroTodos');
+    const botaoAtivos = document.getElementById('filtroAtivos');
+    const botaoInativos = document.getElementById('filtroInativos');
+    
+    if (botaoTodos) botaoTodos.classList.remove('active');
+    if (botaoAtivos) botaoAtivos.classList.remove('active');
+    if (botaoInativos) botaoInativos.classList.remove('active');
+    
+    const botaoAtual = document.getElementById('filtro' + tipo.charAt(0).toUpperCase() + tipo.slice(1));
+    if (botaoAtual) botaoAtual.classList.add('active');
+    
+    // Aplicar filtros
+    aplicarFiltros();
+}
+
+// Função para pesquisar por DC/ID
+function pesquisarDCID() {
+    const input = document.getElementById('pesquisaDCID');
+    if (input) {
+        termoPesquisa = input.value.trim().toLowerCase();
+        aplicarFiltros();
+    }
+}
+
+// Função para limpar pesquisa
+function limparPesquisa() {
+    const input = document.getElementById('pesquisaDCID');
+    if (input) {
+        input.value = '';
+        termoPesquisa = '';
+        aplicarFiltros();
+    }
+}
+
+// Função para limpar todos os filtros
+function limparFiltros() {
+    const input = document.getElementById('pesquisaDCID');
+    if (input) {
+        input.value = '';
+    }
+    termoPesquisa = '';
+    filtroAtual = 'todos';
+    
+    // Resetar botões de filtro
+    const botaoTodos = document.getElementById('filtroTodos');
+    const botaoAtivos = document.getElementById('filtroAtivos');
+    const botaoInativos = document.getElementById('filtroInativos');
+    
+    if (botaoTodos) botaoTodos.classList.add('active');
+    if (botaoAtivos) botaoAtivos.classList.remove('active');
+    if (botaoInativos) botaoInativos.classList.remove('active');
+    
+    aplicarFiltros();
+}
+
+// Função principal para aplicar filtros
+function aplicarFiltros() {
+    const linhas = document.querySelectorAll('#tabelaProducao tr[data-status]');
+    const semResultados = document.getElementById('semResultados');
+    const nenhumaProducao = document.getElementById('nenhumaProducao');
+    const contadorResultados = document.getElementById('contadorResultados');
+    
+    let totalVisiveis = 0;
+    let ativosVisiveis = 0;
+    let inativosVisiveis = 0;
+    
+    // Verificar se há linhas para filtrar
+    if (linhas.length === 0) {
+        if (semResultados) semResultados.style.display = 'none';
+        if (nenhumaProducao) nenhumaProducao.style.display = 'table-row';
+        if (contadorResultados) contadorResultados.innerHTML = 'Nenhum resultado';
+        return;
+    }
+    
+    // Esconder mensagem de nenhuma produção se existir
+    if (nenhumaProducao) nenhumaProducao.style.display = 'none';
+    
+    linhas.forEach(linha => {
+        const status = linha.getAttribute('data-status');
+        const dcId = linha.getAttribute('data-dcid');
+        const isInativo = status === 'CONCLUIDO' || status === 'CANCELADO';
+        
+        let mostrar = true;
+        
+        // Aplicar filtro de status
+        if (filtroAtual === 'ativos' && isInativo) mostrar = false;
+        if (filtroAtual === 'inativos' && !isInativo) mostrar = false;
+        
+        // Aplicar filtro de pesquisa
+        if (mostrar && termoPesquisa && dcId && !dcId.includes(termoPesquisa)) {
+            mostrar = false;
+        }
+        
+        // Mostrar/ocultar linha
+        if (mostrar) {
+            linha.style.display = '';
+            totalVisiveis++;
+            
+            if (isInativo) {
+                inativosVisiveis++;
+            } else {
+                ativosVisiveis++;
+            }
+        } else {
+            linha.style.display = 'none';
+        }
+    });
+    
+    // Mostrar mensagem se não houver resultados
+    if (semResultados) {
+        if (totalVisiveis === 0) {
+            semResultados.style.display = 'table-row';
+            if (contadorResultados) contadorResultados.innerHTML = 'Nenhum resultado';
+        } else {
+            semResultados.style.display = 'none';
+        }
+    }
+    
+    // Atualizar contador
+    if (contadorResultados) {
+        if (totalVisiveis === 0) {
+            contadorResultados.innerHTML = 'Nenhum resultado';
+        } else {
+            contadorResultados.innerHTML = 
+                `Mostrando <span id="contadorAtivosVisiveis">${ativosVisiveis}</span> ativos | ` +
+                `<span id="contadorInativosVisiveis">${inativosVisiveis}</span> inativos`;
+        }
+    }
+}
+
+// Função para validar exclusão dinamicamente
+function validarExclusaoDinamica(dcIdCorreto, producaoId) {
+    const dcIdInput = document.getElementById('confirmarDCID' + producaoId);
+    const motivoInput = document.getElementById('motivoExclusao' + producaoId);
+    const checkbox = document.getElementById('confirmarExclusao' + producaoId);
+    const btnExcluir = document.getElementById('btnExcluir' + producaoId);
+    
+    if (!dcIdInput || !motivoInput || !checkbox || !btnExcluir) return false;
+    
+    const dcIdDigitado = dcIdInput.value.trim();
+    const motivo = motivoInput.value.trim();
+    const checkboxMarcado = checkbox.checked;
+    
+    // Validar DC/ID
+    const dcIdValido = dcIdDigitado === dcIdCorreto;
+    const dcIdFeedback = document.getElementById('feedbackDCID' + producaoId);
+    
+    if (dcIdDigitado && !dcIdValido) {
+        dcIdInput.classList.add('is-invalid');
+        if (dcIdFeedback) dcIdFeedback.style.display = 'block';
+    } else if (dcIdValido) {
+        dcIdInput.classList.remove('is-invalid');
+        dcIdInput.classList.add('is-valid');
+        if (dcIdFeedback) dcIdFeedback.style.display = 'none';
+    } else {
+        dcIdInput.classList.remove('is-invalid', 'is-valid');
+        if (dcIdFeedback) dcIdFeedback.style.display = 'none';
+    }
+    
+    // Validar motivo
+    const motivoValido = motivo.length > 0;
+    const motivoFeedback = document.getElementById('feedbackMotivo' + producaoId);
+    
+    if (motivo && !motivoValido) {
+        motivoInput.classList.add('is-invalid');
+        if (motivoFeedback) motivoFeedback.style.display = 'block';
+    } else if (motivoValido) {
+        motivoInput.classList.remove('is-invalid');
+        motivoInput.classList.add('is-valid');
+        if (motivoFeedback) motivoFeedback.style.display = 'none';
+    } else {
+        motivoInput.classList.remove('is-invalid', 'is-valid');
+        if (motivoFeedback) motivoFeedback.style.display = 'none';
+    }
+    
+    // Validar checkbox
+    const checkboxFeedback = document.getElementById('feedbackCheckbox' + producaoId);
+    
+    if (!checkboxMarcado) {
+        checkbox.classList.add('is-invalid');
+        if (checkboxFeedback) checkboxFeedback.style.display = 'block';
+    } else {
+        checkbox.classList.remove('is-invalid');
+        if (checkboxFeedback) checkboxFeedback.style.display = 'none';
+    }
+    
+    // Habilitar/desabilitar botão
+    const todosValidos = dcIdValido && motivoValido && checkboxMarcado;
+    
+    if (todosValidos) {
+        btnExcluir.disabled = false;
+        btnExcluir.classList.remove('disabled');
+    } else {
+        btnExcluir.disabled = true;
+        btnExcluir.classList.add('disabled');
+    }
+    
+    return todosValidos;
+}
+
+// Função para validação final no submit
+function validarExclusaoFinal(dcIdCorreto, producaoId) {
+    const valido = validarExclusaoDinamica(dcIdCorreto, producaoId);
+    
+    if (!valido) {
+        // Mostrar todos os feedbacks
+        ['feedbackDCID', 'feedbackMotivo', 'feedbackCheckbox'].forEach(feedback => {
+            const element = document.getElementById(feedback + producaoId);
+            if (element) element.style.display = 'block';
+        });
+        
+        // Focar no primeiro campo com erro
+        const dcIdInput = document.getElementById('confirmarDCID' + producaoId);
+        if (dcIdInput && !dcIdInput.value) {
+            dcIdInput.focus();
+        }
+    }
+    
+    return valido;
+}
+
+// Inicializar quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
     
-    // Adiciona evento para reorganizar tabela após reativação/inativação
+    // Inicializar filtros
+    aplicarFiltros();
+    
+    // Adicionar evento de submit para formulários de reativação/inativação
     document.querySelectorAll('form[id^="formReativar"], form[id^="formInativar"]').forEach(form => {
         form.addEventListener('submit', function() {
-            // Armazena a ação para atualizar a interface depois
             sessionStorage.setItem('atualizarTabela', 'true');
         });
     });
     
-    // Verifica se precisa atualizar a tabela após redirecionamento
+    // Verificar se precisa atualizar a tabela após redirecionamento
     if (sessionStorage.getItem('atualizarTabela') === 'true') {
         sessionStorage.removeItem('atualizarTabela');
-        // Recarregar a página para mostrar a nova ordenação
         setTimeout(() => {
             window.location.reload();
         }, 100);
     }
+    
+    // Permitir pesquisa com Enter
+    const pesquisaInput = document.getElementById('pesquisaDCID');
+    if (pesquisaInput) {
+        pesquisaInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                pesquisarDCID();
+            }
+        });
+    }
+    
+    // Configurar modais de exclusão
+    {% for producao in producoes %}
+    (function() {
+        const modal = document.getElementById('excluirModal{{ producao.id }}');
+        if (modal) {
+            // Limpar validação quando modal for fechado
+            modal.addEventListener('hidden.bs.modal', function() {
+                const dcIdInput = document.getElementById('confirmarDCID{{ producao.id }}');
+                const motivoInput = document.getElementById('motivoExclusao{{ producao.id }}');
+                const checkbox = document.getElementById('confirmarExclusao{{ producao.id }}');
+                const btnExcluir = document.getElementById('btnExcluir{{ producao.id }}');
+                
+                if (dcIdInput) dcIdInput.value = '';
+                if (motivoInput) motivoInput.value = '';
+                if (checkbox) checkbox.checked = false;
+                if (btnExcluir) {
+                    btnExcluir.disabled = true;
+                    btnExcluir.classList.add('disabled');
+                }
+                
+                // Limpar classes de validação
+                [dcIdInput, motivoInput, checkbox].forEach(input => {
+                    if (input) {
+                        input.classList.remove('is-valid', 'is-invalid');
+                    }
+                });
+                
+                // Ocultar feedbacks
+                ['feedbackDCID', 'feedbackMotivo', 'feedbackCheckbox'].forEach(feedback => {
+                    const element = document.getElementById(feedback + '{{ producao.id }}');
+                    if (element) element.style.display = 'none';
+                });
+            });
+            
+            // Validar quando modal é aberto
+            modal.addEventListener('shown.bs.modal', function() {
+                setTimeout(() => {
+                    validarExclusaoDinamica('{{ producao.dc_id }}', '{{ producao.id }}');
+                }, 100);
+            });
+        }
+    })();
+    {% endfor %}
 });
 
-// Função para atualizar contadores
+// Atualizar contadores (se necessário)
 function atualizarContadores() {
-    const tabela = document.getElementById('tabelaProducao');
-    const linhas = tabela.querySelectorAll('tr[data-status]');
-    
-    let ativos = 0;
-    let inativos = 0;
-    
-    linhas.forEach(linha => {
-        const status = linha.getAttribute('data-status');
-        if (status === 'CONCLUIDO' || status === 'CANCELADO') {
-            inativos++;
-        } else {
-            ativos++;
-        }
-    });
-    
-    document.getElementById('contadorAtivos').textContent = ativos;
-    document.getElementById('contadorInativos').textContent = inativos;
+    // Esta função pode ser chamada após operações que alterem a tabela
+    aplicarFiltros();
 }
-
-// Inicializar contadores
-document.addEventListener('DOMContentLoaded', atualizarContadores);
 </script>

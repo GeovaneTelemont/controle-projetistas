@@ -2,7 +2,47 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 from django.utils.html import format_html
-from .models import Producao, TipoProjeto, Categoria, Profile, HistoricoStatus
+from .models import Producao, TipoProjeto, Categoria, Profile, HistoricoStatus, RegistroExclusao
+
+
+@admin.register(RegistroExclusao)
+class RegistroExclusaoAdmin(admin.ModelAdmin):
+    list_display = ('dc_id', 'projetista', 'status_final', 'usuario_exclusao', 'data_exclusao', 'get_tempo_atividade_display')
+    list_filter = ('status_final', 'tipo_projeto', 'categoria', 'data_exclusao', 'projetista', 'usuario_exclusao')
+    search_fields = ('dc_id', 'motivo_exclusao', 'observacoes_originais')
+    readonly_fields = ('data_exclusao', 'projeto_id_original', 'dc_id', 'data_projeto', 
+                      'projetista', 'tipo_projeto', 'categoria', 'status_final', 
+                      'metragem_cabo', 'observacoes_originais', 'total_alteracoes_status',
+                      'tempo_total_atividade', 'usuario_exclusao', 'ip_address', 'user_agent')
+    
+    fieldsets = (
+        ('Informações do Projeto Excluído', {
+            'fields': ('dc_id', 'projeto_id_original', 'data_projeto', 'projetista', 
+                      'tipo_projeto', 'categoria', 'status_final', 'metragem_cabo', 
+                      'observacoes_originais')
+        }),
+        ('Métricas', {
+            'fields': ('total_alteracoes_status', 'tempo_total_atividade')
+        }),
+        ('Informações da Exclusão', {
+            'fields': ('motivo_exclusao', 'data_exclusao', 'usuario_exclusao')
+        }),
+        ('Auditoria', {
+            'fields': ('ip_address', 'user_agent'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        return False  # Não permitir adicionar manualmente
+    
+    def has_change_permission(self, request, obj=None):
+        return False  # Não permitir editar registros de exclusão
+    
+    def has_delete_permission(self, request, obj=None):
+        # Apenas superusuários podem deletar registros de exclusão
+        return request.user.is_superuser
+
 
 # Define um admin inline para o Profile
 class ProfileInline(admin.StackedInline):

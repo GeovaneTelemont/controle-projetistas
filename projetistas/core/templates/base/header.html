@@ -44,7 +44,7 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item {% if request.path == producao_url %}active{% endif %}" 
                                    href="{% url 'producao' %}"><i class="fas fa-play-circle me-2"></i>Iniciar Produção</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-tasks me-2"></i>Ordens Ativas</a></li>
+                            <li><a class="dropdown-item" href="{% url 'producao-inativos' %}"><i class="fas fa-tasks me-2"></i>Produção Concluidas e Canceladas</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-history me-2"></i>Histórico</a></li>
                         </ul>
                     </li>
