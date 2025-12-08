@@ -7,8 +7,8 @@
             <h5 class="mb-0 text-white">
                 <i class="fas fa-industry me-2"></i>Produção
                 <small class="ms-2 opacity-75">
-                    (Ativos: {{ producoes_andamento|add:producoes_pendentes }} | 
-                    Inativos Recentes: {{ total_inativas }})
+                    (Ativos: {{ producoes_pendentes|add:producoes_andamento|add:producoes_revisao }} | 
+                    Inativos: {{ producoes_concluidas|add:producoes_canceladas }})
                 </small>
             </h5>
             <div>
@@ -18,7 +18,7 @@
                         style="border-radius: 8px;">
                     <i class="fas fa-plus-circle me-2"></i>Inserir Novo Projeto
                 </button>
-                {% if total_inativas > 0 %}
+                {% if producoes_concluidas|add:producoes_canceladas > 0 %}
                 <a href="#inativos" class="btn btn-outline-light btn-sm" data-bs-toggle="tab">
                     <i class="fas fa-archive me-2"></i>Ver Todos Inativos
                 </a>
@@ -82,6 +82,7 @@
                         <tr class="border-bottom {% if producao.status == 'CONCLUIDO' or producao.status == 'CANCELADO' %}table-inactive{% endif %}" 
                             style="cursor: pointer;"
                             data-status="{{ producao.status }}"
+                            data-estado="{% if producao.status == 'PENDENTE' or producao.status == 'EM_ANDAMENTO' or producao.status == 'REVISAO' %}ativo{% else %}inativo{% endif %}"
                             data-id="{{ producao.id }}"
                             data-dcid="{{ producao.dc_id|lower }}">
                             
@@ -187,7 +188,7 @@
                                             class="btn btn-sm btn-outline-secondary btn-action" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#inativarModal{{ producao.id }}"
-                                            title="Marcar como Concluido">
+                                            title="Marcar como Inativo">
                                         <i class="fas fa-check-circle"></i>
                                     </button>
                                     {% endif %}
@@ -205,7 +206,7 @@
                         </tr>
                         
                         <!-- ========== MODAIS PARA EDIÇÃO INDIVIDUAL ========== -->
-                        
+                        <!-- (Todos os modais de edição permanecem iguais) -->
                         <!-- Modal para editar DC/ID -->
                         <div class="modal fade" id="editarDCIDModal{{ producao.id }}" tabindex="-1">
                             <div class="modal-dialog modal-sm">
@@ -390,7 +391,7 @@
                         </div>
                         
                         <!-- ========== MODAIS DE AÇÕES ========== -->
-                        
+                        <!-- (Todos os modais de ações permanecem iguais) -->
                         <!-- Modal para Edição Completa -->
                         <div class="modal fade" id="editarCompletoModal{{ producao.id }}" tabindex="-1">
                             <div class="modal-dialog">
@@ -469,13 +470,13 @@
                         </div>
                     </div>
                     
-                    <!-- Modal para Inativar (Excluir) -->
+                    <!-- Modal para Inativar (Marcar como Inativo) -->
                     <div class="modal fade" id="inativarModal{{ producao.id }}" tabindex="-1">
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-header bg-warning text-dark">
                                     <h5 class="modal-title">
-                                        <i class="fas fa-check-circle me-2"></i>Marcar como Concluido
+                                        <i class="fas fa-check-circle me-2"></i>Marcar como Inativo
                                     </h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
@@ -486,21 +487,21 @@
                                     <div class="modal-body">
                                         <div class="alert alert-warning">
                                             <i class="fas fa-exclamation-triangle me-2"></i>
-                                            <strong>Atenção!</strong> Esta ação não exclui o projeto, apenas marca como concluído.
+                                            <strong>Atenção!</strong> Esta ação marcará o projeto como inativo (Concluído ou Cancelado).
                                         </div>
-                                        <p>Selecione o status Cancelado ou Concluído:</p>
+                                        <p>Selecione o status:</p>
                                         
                                         <div class="mb-3">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="status_inativar" 
-                                                       id="cancelado{{ producao.id }}" value="CANCELADO" checked>
+                                                       id="cancelado{{ producao.id }}" value="CANCELADO">
                                                 <label class="form-check-label" for="cancelado{{ producao.id }}">
                                                     <span class="badge status-cancelado">Cancelado</span> - Projeto foi cancelado
                                                 </label>
                                             </div>
                                             <div class="form-check mt-2">
                                                 <input class="form-check-input" type="radio" name="status_inativar" 
-                                                       id="concluido{{ producao.id }}" value="CONCLUIDO">
+                                                       id="concluido{{ producao.id }}" value="CONCLUIDO" checked>
                                                 <label class="form-check-label" for="concluido{{ producao.id }}">
                                                     <span class="badge status-concluido">Concluído</span> - Projeto foi finalizado
                                                 </label>
@@ -510,13 +511,13 @@
                                         <div class="mb-3">
                                             <label class="form-label">Motivo</label>
                                             <textarea name="motivo_inativar" class="form-control" rows="3" 
-                                                      placeholder="Descreva o motivo se for cancelamento ou caso contrário, deixe em branco..."></textarea>
+                                                      placeholder="Descreva o motivo da conclusão/cancelamento..." required></textarea>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                                         <button type="submit" name="inativar_producao" class="btn btn-warning">
-                                            <i class="fas fa-check-circle me-2"></i>Marcar como Concluido
+                                            <i class="fas fa-check-circle me-2"></i>Marcar como Inativo
                                         </button>
                                     </div>
                                 </form>
@@ -541,12 +542,12 @@
                                     <div class="modal-body">
                                         <div class="alert alert-info">
                                             <i class="fas fa-info-circle me-2"></i>
-                                            Esta ação reativará o projeto para edição.
+                                            Esta ação reativará o projeto para status ativo (Pendente, Em Andamento ou Revisão).
                                         </div>
                                         <p>Selecione o novo status:</p>
                                         
                                         <div class="mb-3">
-                                            <label class="form-label">Novo Status</label>
+                                            <label class="form-label">Novo Status (Ativo)</label>
                                             <select name="status_reativar" class="form-select" required>
                                                 <option value="PENDENTE">Pendente</option>
                                                 <option value="EM_ANDAMENTO" selected>Em Andamento</option>
@@ -702,8 +703,8 @@
                     <i class="fas fa-info-circle me-1"></i>
                     <span id="contadorResultados">
                         {% if producoes %}
-                            Mostrando <span id="contadorAtivos">{{ producoes_andamento|add:producoes_pendentes }}</span> ativos 
-                            | <span id="contadorInativos">{{ total_inativas }}</span> inativos recentes
+                            Mostrando <span id="contadorAtivosVisiveis">{{ producoes_pendentes|add:producoes_andamento|add:producoes_revisao }}</span> ativos 
+                            | <span id="contadorInativosVisiveis">{{ producoes_concluidas|add:producoes_canceladas }}</span> inativos
                         {% else %}
                             Nenhum resultado
                         {% endif %}
@@ -711,7 +712,7 @@
                 </small>
                 <small class="text-muted">
                     <i class="fas fa-sort me-1"></i>
-                    Ordenação: Ativos primeiro → Inativos recentes
+                    Ordenação: Ativos primeiro → Inativos
                 </small>
             </div>
         </div>
@@ -732,7 +733,7 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Status será EM_ANDAMENTO por padrão -->
+                    <!-- Status será EM_ANDAMENTO por padrão (Status Ativo) -->
                     <input type="hidden" name="status" value="EM_ANDAMENTO">
                     <!-- Motivo será "Iniciando projeto" por padrão -->
                     <input type="hidden" name="motivo_status" value="Iniciando projeto">
@@ -796,7 +797,7 @@
                             <div>
                                 <small>
                                     <strong>Informação:</strong><br>
-                                    • Status padrão: <span class="badge status-andamento">EM ANDAMENTO</span><br>
+                                    • Status padrão: <span class="badge status-andamento">EM ANDAMENTO</span> (Status Ativo)<br>
                                     • Motivo padrão: "Iniciando projeto"<br>
                                     • Data: preenchida automaticamente<br>
                                     • Campos marcados com * são obrigatórios.
@@ -1128,12 +1129,20 @@ function limparFiltros() {
     aplicarFiltros();
 }
 
+// Função para verificar se um status é ativo
+function isStatusAtivo(status) {
+    const statusAtivos = ['PENDENTE', 'EM_ANDAMENTO', 'REVISAO'];
+    return statusAtivos.includes(status);
+}
+
 // Função principal para aplicar filtros
 function aplicarFiltros() {
     const linhas = document.querySelectorAll('#tabelaProducao tr[data-status]');
     const semResultados = document.getElementById('semResultados');
     const nenhumaProducao = document.getElementById('nenhumaProducao');
     const contadorResultados = document.getElementById('contadorResultados');
+    const contadorAtivos = document.getElementById('contadorAtivosVisiveis');
+    const contadorInativos = document.getElementById('contadorInativosVisiveis');
     
     let totalVisiveis = 0;
     let ativosVisiveis = 0;
@@ -1152,14 +1161,14 @@ function aplicarFiltros() {
     
     linhas.forEach(linha => {
         const status = linha.getAttribute('data-status');
+        const estado = linha.getAttribute('data-estado'); // 'ativo' ou 'inativo'
         const dcId = linha.getAttribute('data-dcid');
-        const isInativo = status === 'CONCLUIDO' || status === 'CANCELADO';
         
         let mostrar = true;
         
-        // Aplicar filtro de status
-        if (filtroAtual === 'ativos' && isInativo) mostrar = false;
-        if (filtroAtual === 'inativos' && !isInativo) mostrar = false;
+        // Aplicar filtro de status (ativo/inativo)
+        if (filtroAtual === 'ativos' && estado !== 'ativo') mostrar = false;
+        if (filtroAtual === 'inativos' && estado !== 'inativo') mostrar = false;
         
         // Aplicar filtro de pesquisa
         if (mostrar && termoPesquisa && dcId && !dcId.includes(termoPesquisa)) {
@@ -1171,10 +1180,10 @@ function aplicarFiltros() {
             linha.style.display = '';
             totalVisiveis++;
             
-            if (isInativo) {
-                inativosVisiveis++;
-            } else {
+            if (estado === 'ativo') {
                 ativosVisiveis++;
+            } else {
+                inativosVisiveis++;
             }
         } else {
             linha.style.display = 'none';
@@ -1191,16 +1200,18 @@ function aplicarFiltros() {
         }
     }
     
-    // Atualizar contador
+    // Atualizar contadores
     if (contadorResultados) {
         if (totalVisiveis === 0) {
             contadorResultados.innerHTML = 'Nenhum resultado';
         } else {
             contadorResultados.innerHTML = 
-                `Mostrando <span id="contadorAtivosVisiveis">${ativosVisiveis}</span> ativos | ` +
-                `<span id="contadorInativosVisiveis">${inativosVisiveis}</span> inativos`;
+                `Mostrando ${ativosVisiveis} ativos | ${inativosVisiveis} inativos`;
         }
     }
+    
+    if (contadorAtivos) contadorAtivos.textContent = ativosVisiveis;
+    if (contadorInativos) contadorInativos.textContent = inativosVisiveis;
 }
 
 // Função para validar exclusão dinamicamente
