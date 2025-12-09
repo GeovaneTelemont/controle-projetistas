@@ -36,8 +36,29 @@ class Profile(models.Model):
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     must_change_password = models.BooleanField('Forçar troca de senha', default=True)
+    foto = models.ImageField(
+        'Foto de Perfil', 
+        upload_to='profile_pics/', 
+        blank=True,
+        null=True
+    )
+    
+    # Campos de data/hora
+    created_at = models.DateTimeField('Criado em', auto_now_add=True)
+    updated_at = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Perfil'
+        verbose_name_plural = 'Perfis'
+        ordering = ['user__username']
 
     def __str__(self):
+        return self.user.username
+    
+    def get_nome_completo(self):
+        """Retorna o nome completo do usuário"""
+        if self.user.first_name and self.user.last_name:
+            return f"{self.user.first_name} {self.user.last_name}"
         return self.user.username
 
 # Signal para criar ou atualizar o perfil do usuário automaticamente.

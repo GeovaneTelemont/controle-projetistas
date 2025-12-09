@@ -11,7 +11,7 @@ from django import template
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth import logout
 from django.contrib.auth import update_session_auth_hash
-from .models import Producao, TipoProjeto, Categoria
+from .models import Producao, TipoProjeto, Categoria, Profile
 from django.utils import timezone
 # Mantenha suas outras views como estão (custom_logout, custom_login, cadastro, dashboard, perfil)
 
@@ -299,122 +299,64 @@ def cadastro(request):
 
 @login_required
 def perfil(request):
-    """
-    View para edição do perfil do usuário
-    """
-    # Obter dados para os selects
-    tipos_projeto = TipoProjeto.objects.all().order_by('nome')
-    categorias = Categoria.objects.all().order_by('nome')
-    projetos = Producao.objects.filter(projetista=request.user).order_by('-data')
+    user = request.user
+    profile, created = Profile.objects.get_or_create(user=user)
     
     if request.method == 'POST':
-        # Debug: verificar qual botão foi clicado
-        print("POST data:", request.POST)
+        # 1. Informações Pessoais
+        if 'update_profile' in request.POST:
+            user.username = request.POST.get('username', user.username)
+            user.email = request.POST.get('email', user.email)
+            user.first_name = request.POST.get('first_name', user.first_name)
+            user.last_name = request.POST.get('last_name', user.last_name)
+            user.save()
+            messages.success(request, 'Informações pessoais atualizadas com sucesso!')
         
-        # Processar NOVO PROJETO
-        if 'novo_projeto' in request.POST:
-            print("Processando novo projeto...")
-            try:
-                # Validar dados obrigatórios
-                dc_id = request.POST.get('dc_id')
-                data = request.POST.get('data')
-                tipo_projeto_id = request.POST.get('tipo_projeto')
-                categoria_id = request.POST.get('categoria')
-                
-                if not all([dc_id, data, tipo_projeto_id, categoria_id]):
-                    messages.error(request, 'Preencha todos os campos obrigatórios!')
-                    return redirect('perfil')
-                
-                # Criar novo projeto
-                projeto = Producao(
-                    dc_id=dc_id,
-                    data=data,
-                    tipo_projeto_id=tipo_projeto_id,
-                    categoria_id=categoria_id,
-                    metragem_cabo=request.POST.get('metragem_cabo', 0.00) or 0.00,
-                    observacoes=request.POST.get('observacoes', ''),
-                    projetista=request.user,
-                    status='PENDENTE',
-                    motivo_status='Projeto criado'
-                )
-                
-                projeto.save()
-                print(f"Projeto {projeto.dc_id} salvo com ID: {projeto.id}")
-                messages.success(request, f'Projeto {projeto.dc_id} criado com sucesso!')
-                return redirect('perfil')
-                    
-            except Exception as e:
-                print(f"Erro ao criar projeto: {str(e)}")
-                messages.error(request, f'Erro ao criar projeto: {str(e)}')
-        
-        # Processar ALTERAÇÃO DE SENHA
+        # 2. Alterar Senha
         elif 'change_password' in request.POST:
-            print("Processando alteração de senha...")
-            form = PasswordChangeForm(user=request.user, data=request.POST)
-            if form.is_valid():
-                user = form.save()
+            old_password = request.POST.get('old_password')
+            new_password1 = request.POST.get('new_password1')
+            new_password2 = request.POST.get('new_password2')
+            
+            if not user.check_password(old_password):
+                messages.error(request, 'Senha atual incorreta!')
+            elif new_password1 != new_password2:
+                messages.error(request, 'As novas senhas não coincidem!')
+            elif len(new_password1) < 8:
+                messages.error(request, 'A nova senha deve ter pelo menos 8 caracteres!')
+            else:
+                user.set_password(new_password1)
+                user.save()
                 update_session_auth_hash(request, user)
                 messages.success(request, 'Senha alterada com sucesso!')
-            else:
-                for error in form.errors.values():
-                    messages.error(request, error)
-            return redirect('perfil')
         
-        # Processar ATUALIZAÇÃO DE PERFIL
-        elif 'update_profile' in request.POST:
-            print("Processando atualização de perfil...")
-            try:
-                user = request.user
-                user.username = request.POST.get('username', user.username)
-                user.first_name = request.POST.get('first_name', '')
-                user.last_name = request.POST.get('last_name', '')
-                user.email = request.POST.get('email', user.email)
-                user.save()
-                messages.success(request, 'Perfil atualizado com sucesso!')
-            except Exception as e:
-                messages.error(request, f'Erro ao atualizar perfil: {str(e)}')
-            return redirect('perfil')
+        # 3. Foto de Perfil (upload)
+        elif 'update_avatar' in request.POST and 'foto' in request.FILES:
+            # Remove foto antiga se existir
+            if profile.foto:
+                profile.foto.delete(save=False)
+            
+            # Salva nova foto
+            profile.foto = request.FILES['foto']
+            profile.save()
+            messages.success(request, 'Foto atualizada com sucesso!')
         
-        # Processar ALTERAÇÃO DE STATUS
-        elif 'alterar_status' in request.POST:
-            print("Processando alteração de status...")
-            try:
-                projeto_id = request.POST.get('projeto_id')
-                projeto = Producao.objects.get(id=projeto_id, projetista=request.user)
-                projeto.status = request.POST.get('novo_status')
-                projeto.motivo_status = request.POST.get('motivo_status', '')
-                projeto.save()
-                messages.success(request, f'Status do projeto {projeto.dc_id} atualizado!')
-            except Producao.DoesNotExist:
-                messages.error(request, 'Projeto não encontrado!')
-            except Exception as e:
-                messages.error(request, f'Erro: {str(e)}')
-            return redirect('perfil')
+        # 4. Remover Foto
+        elif 'remover_foto' in request.POST:
+            if profile.foto:
+                profile.foto.delete(save=False)
+                profile.foto = None
+                profile.save()
+                messages.success(request, 'Foto removida com sucesso!')
         
-        # Processar EDIÇÃO DE PROJETO
-        elif 'editar_projeto' in request.POST:
-            print("Processando edição de projeto...")
-            try:
-                projeto_id = request.POST.get('projeto_id')
-                projeto = Producao.objects.get(id=projeto_id, projetista=request.user)
-                projeto.metragem_cabo = request.POST.get('metragem_cabo', 0.00) or 0.00
-                projeto.observacoes = request.POST.get('observacoes', '')
-                projeto.save()
-                messages.success(request, f'Projeto {projeto.dc_id} atualizado!')
-            except Producao.DoesNotExist:
-                messages.error(request, 'Projeto não encontrado!')
-            except Exception as e:
-                messages.error(request, f'Erro: {str(e)}')
-            return redirect('perfil')
+        return redirect('perfil')
     
-    # Contexto para o template
     context = {
-        'tipos_projeto': tipos_projeto,
-        'categorias': categorias,
-        'projetos': projetos,
+        'user': user,
+        'profile': profile,
     }
-    
     return render(request, 'registration/perfil.html', context)
+
 import json
 from django.shortcuts import render
 from django.db.models import Count, Q
@@ -525,10 +467,19 @@ def dashboard(request):
             if not nome:
                 nome = item['projetista__username']
             
+            # Obter o usuário para acessar a foto de perfil
+            try:
+                user = User.objects.get(id=projetista_id)
+                # Verificar se o usuário tem foto de perfil (ajuste conforme seu modelo)
+                foto_url = user.foto.url if hasattr(user, 'foto') and user.foto else None
+            except User.DoesNotExist:
+                foto_url = None
+            
             projetistas_dict[projetista_id] = {
                 'id': projetista_id,
                 'username': item['projetista__username'],
                 'nome': nome,
+                'foto_url': foto_url,  # Adiciona a URL da foto
                 'tipos': {},
                 'total': 0
             }

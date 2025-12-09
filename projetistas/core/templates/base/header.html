@@ -89,11 +89,21 @@
                     <!-- Perfil do Usuário -->
                     <div class="dropdown">
                         <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                            <div class="avatar-circle me-2">
+                            
+                            <div class="avatar-circle me-2" style="width: 32px; height: 32px;">
                                 {% if user.is_authenticated %}
-                                    <span class="avatar-initials">
-                                        {{ user.get_full_name|default:user.username|first|upper }}
-                                    </span>
+                                    {% if user.profile.foto and user.profile.foto.url %}
+                                        <img src="{{ user.profile.foto.url }}" 
+                                                alt="{{ user.username }}"
+                                                style="width: 100%; height: 100%; object-fit: cover;">
+                                        <span class="avatar-initials" style="display: none;">
+                                            {{ user.get_full_name|default:user.username|first|upper }}
+                                        </span>
+                                    {% else %}
+                                        <span class="avatar-initials">
+                                            {{ user.get_full_name|default:user.username|first|upper }}
+                                        </span>
+                                    {% endif %}
                                 {% else %}
                                     <span class="avatar-initials">
                                         <i class="fas fa-user"></i>

@@ -16,6 +16,8 @@ Including another URLconf
 """
 # urls.py (versão simplificada)
 from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from projetistas.core import views
@@ -32,3 +34,8 @@ urlpatterns = [
     path('perfil/', views.perfil, name='perfil'),
      path('exportar-excel/', views.exportar_excel, name='exportar_excel'),
 ]
+
+# Adicione esta linha para servir arquivos de mídia durante o desenvolvimento
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
