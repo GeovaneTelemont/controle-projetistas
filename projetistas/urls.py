@@ -26,6 +26,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.dashboard, name='dashboard'),
     path('producao/', views.producao , name='producao'),
+    path('relatorios/', views.relatorios, name='relatorios'),
     
     # URLs de autenticação
     path('login/', views.custom_login, name='login'),

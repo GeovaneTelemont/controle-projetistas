@@ -1,0 +1,443 @@
+{% block title %}Relatórios de Produção{% endblock %}
+{% load static %}
+
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2">Relatórios de Produção</h1>
+            <p class="text-muted mb-0">Visualize e exporte os dados de produção</p>
+        </div>
+        <div>
+            <form method="GET" action="{% url 'exportar_excel' %}" class="d-inline">
+                <input type="hidden" name="exportar_excel" value="1">
+                {% for key, value in request.GET.items %}
+                    {% if key != 'exportar_excel' and key != 'page' %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endif %}
+                {% endfor %}
+                {% if is_superuser %}
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-file-excel me-1"></i> Exportar Excel
+                </button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Filtros (mantenha como está) -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white py-3">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{% url 'relatorios' %}">
+                <div class="row g-3">
+                    <!-- Data Início -->
+                    <div class="col-md-2">
+                        <label class="form-label">Data Início</label>
+                        <input type="date" class="form-control" name="data_inicio" 
+                               value="{{ filter_data.data_inicio }}">
+                    </div>
+                    
+                    <!-- Data Fim -->
+                    <div class="col-md-2">
+                        <label class="form-label">Data Fim</label>
+                        <input type="date" class="form-control" name="data_fim"
+                               value="{{ filter_data.data_fim }}">
+                    </div>
+                    
+                    <!-- Projetista -->
+                    <div class="col-md-2">
+                        <label class="form-label">Projetista</label>
+                        <select class="form-select" name="projetista">
+                            <option value="">Todos</option>
+                            {% for projetista in projetistas %}
+                            <option value="{{ projetista.id }}" 
+                                    {% if filter_data.projetista|add:"0" == projetista.id %}selected{% endif %}>
+                                {{ projetista.get_full_name|default:projetista.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status">
+                            <option value="">Todos</option>
+                            {% for status_key, status_value in status_choices %}
+                            <option value="{{ status_key }}"
+                                    {% if filter_data.status == status_key %}selected{% endif %}>
+                                {{ status_value }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Tipo de Projeto -->
+                    <div class="col-md-2">
+                        <label class="form-label">Tipo de Projeto</label>
+                        <select class="form-select" name="tipo_projeto">
+                            <option value="">Todos</option>
+                            {% for tipo in tipos_projeto %}
+                            <option value="{{ tipo.id }}"
+                                    {% if filter_data.tipo_projeto|add:"0" == tipo.id %}selected{% endif %}>
+                                {{ tipo.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Categoria -->
+                    <div class="col-md-2">
+                        <label class="form-label">Categoria</label>
+                        <select class="form-select" name="categoria">
+                            <option value="">Todos</option>
+                            {% for categoria in categorias %}
+                            <option value="{{ categoria.id }}"
+                                    {% if filter_data.categoria|add:"0" == categoria.id %}selected{% endif %}>
+                                {{ categoria.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Ordenação -->
+                    <div class="col-md-3">
+                        <label class="form-label">Ordenação</label>
+                        <select class="form-select" name="ordenacao">
+                            <option value="-data" {% if filter_data.ordenacao == '-data' %}selected{% endif %}>Data (mais recente)</option>
+                            <option value="data" {% if filter_data.ordenacao == 'data' %}selected{% endif %}>Data (mais antiga)</option>
+                            <option value="projetista" {% if filter_data.ordenacao == 'projetista' %}selected{% endif %}>Projetista (A-Z)</option>
+                            <option value="-projetista" {% if filter_data.ordenacao == '-projetista' %}selected{% endif %}>Projetista (Z-A)</option>
+                            <option value="dc_id" {% if filter_data.ordenacao == 'dc_id' %}selected{% endif %}>DC/ID (A-Z)</option>
+                            <option value="-dc_id" {% if filter_data.ordenacao == '-dc_id' %}selected{% endif %}>DC/ID (Z-A)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Itens por página -->
+                    <div class="col-md-2">
+                        <label class="form-label">Itens por página</label>
+                        <select class="form-select" name="itens_por_pagina">
+                            <option value="10" {% if filter_data.itens_por_pagina == 10 %}selected{% endif %}>10</option>
+                            <option value="25" {% if filter_data.itens_por_pagina == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if filter_data.itens_por_pagina == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if filter_data.itens_por_pagina == 100 %}selected{% endif %}>100</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Botões -->
+                    <div class="col-md-12 mt-3">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i> Aplicar Filtros
+                            </button>
+                            <a href="{% url 'relatorios' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eraser me-1"></i> Limpar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Estatísticas com cores específicas (mantenha como está) -->
+    <div class="row mb-4">
+        <!-- TOTAL - AZUL -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-primary border-start-4 shadow-sm h-100" 
+                 style="border-left-color: #0d6efd !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">TOTAL</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #0d6efd;">{{ total_projetos }}</div>
+                    <div class="mt-2 small text-muted">Projetos registrados</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CONCLUÍDOS - VERDE -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-success border-start-4 shadow-sm h-100"
+                 style="border-left-color: #198754 !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">CONCLUÍDOS</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #198754;">{{ projetos_concluidos }}</div>
+                    <div class="mt-2 small text-muted">
+                        {% if total_projetos > 0 %}
+                        {{ projetos_concluidos|floatformat:0 }}% do total
+                        {% else %}
+                        0%
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- EM ANDAMENTO - AMARELO -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-warning border-start-4 shadow-sm h-100"
+                 style="border-left-color: #ffc107 !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">EM ANDAMENTO</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #ffc107;">{{ projetos_andamento }}</div>
+                    <div class="mt-2 small text-muted">Projetos ativos</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- PENDENTES - LARANJA -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-orange border-start-4 shadow-sm h-100"
+                 style="border-left-color: #fd7e14 !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">PENDENTES</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #fd7e14;">{{ projetos_pendentes }}</div>
+                    <div class="mt-2 small text-muted">Aguardando início</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- METRAGEM TOTAL - MARRON -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-brown border-start-4 shadow-sm h-100"
+                 style="border-left-color: #795548 !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">METRAGEM TOTAL</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #795548;">{{ metragem_total|floatformat:2 }} m</div>
+                    <div class="mt-2 small text-muted">
+                        {% if projetos_concluidos > 0 %}
+                        {{ metragem_media|floatformat:2 }}m/média
+                        {% else %}
+                        0m/média
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TEMPO MÉDIO - ROXO -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-purple border-start-4 shadow-sm h-100"
+                 style="border-left-color: #6f42c1 !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">TEMPO MÉDIO</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #6f42c1;">
+                        {{ tempo_medio_formatado }}
+                    </div>
+                    <div class="mt-2 small text-muted">Por projeto</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela - MODIFICADA para ter as mesmas colunas da planilha -->
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>DC/ID</th>
+                            <th>PROJETISTAS</th>
+                            <th>TIPO DE PROJETO</th>
+                            <th>CATEGORIA</th>
+                            <th>STATUS</th>
+                            <th>MOTIVO DE STATUS</th>
+                            <th class="text-end">METRAGEM (M)</th>
+                            <th>DATA DO PROJETO</th>
+                            <th>DATA/HORA INÍCIO</th>
+                            <th>DATA/HORA TÉRMINO</th>
+                            <th class="text-center">DIAS</th>
+                            <th class="text-center">HORAS</th>
+                            <th>TEMPO TOTAL</th>
+                            <th>OBSERVAÇÕES GERAIS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producao in producoes %}
+                        <tr>
+                            <td><strong>{{ producao.dc_id }}</strong></td>
+                            <td>{{ producao.projetista.get_full_name|default:producao.projetista.username }}</td>
+                            <td>{{ producao.tipo_projeto.nome|default:"-" }}</td>
+                            <td>{{ producao.categoria.nome|default:"-" }}</td>
+                            <td>
+                                {% if producao.status == 'CONCLUIDO' %}
+                                <span class="badge bg-success">{{ producao.get_status_display }}</span>
+                                {% elif producao.status == 'EM_ANDAMENTO' %}
+                                <span class="badge bg-warning text-dark">{{ producao.get_status_display }}</span>
+                                {% elif producao.status == 'PENDENTE' %}
+                                <span class="badge" style="background-color: #fd7e14;">{{ producao.get_status_display }}</span>
+                                {% elif producao.status == 'REVISAO' %}
+                                <span class="badge bg-info">{{ producao.get_status_display }}</span>
+                                {% elif producao.status == 'CANCELADO' %}
+                                <span class="badge bg-danger">{{ producao.get_status_display }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ producao.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ producao.motivo_status_display|default:"-" }}</td>
+                            <td class="text-end">{{ producao.metragem_cabo|floatformat:2 }}</td>
+                            <td>{{ producao.data|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if producao.data_inicio %}
+                                    {{ producao.data_inicio|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if producao.status == 'CONCLUIDO' and producao.data_conclusao %}
+                                    {{ producao.data_conclusao|date:"d/m/Y H:i" }}
+                                {% elif producao.status == 'CANCELADO' and producao.data_cancelamento %}
+                                    {{ producao.data_cancelamento|date:"d/m/Y H:i" }}
+                                {% elif producao.status == 'EM_ANDAMENTO' %}
+                                    <span class="text-warning">EM ANDAMENTO</span>
+                                {% elif producao.status == 'PENDENTE' %}
+                                    <span class="text-muted">-</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if producao.status in 'CONCLUIDO,CANCELADO' %}
+                                    {{ producao.dias_calculados|default:"0" }}
+                                {% elif producao.status == 'EM_ANDAMENTO' and producao.data_inicio %}
+                                    {{ producao.dias_calculados|default:"0" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if producao.status in 'CONCLUIDO,CANCELADO' %}
+                                    {{ producao.horas_minutos|default:"00:00" }}
+                                {% elif producao.status == 'EM_ANDAMENTO' and producao.data_inicio %}
+                                    {{ producao.horas_minutos|default:"00:00" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if producao.status in 'CONCLUIDO,CANCELADO' %}
+                                    {{ producao.tempo_total_formatado|default:"00:00" }}
+                                {% elif producao.status == 'EM_ANDAMENTO' and producao.data_inicio %}
+                                    {{ producao.tempo_total_formatado|default:"00:00" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="small">{{ producao.observacoes|default:"-"|truncatechars:50 }}</td>
+                        </tr>
+                        
+                        {% comment %} Linha de debug opcional {% endcomment %}
+                        <!-- 
+                        <tr style="background-color: #f8f9fa;">
+                            <td colspan="14" class="small text-muted">
+                                <strong>DEBUG:</strong> 
+                                Status: '{{ producao.status }}' | 
+                                Data Início: {{ producao.data_inicio|date:"d/m/Y H:i"|default:"None" }} |
+                                Data Conclusão: {{ producao.data_conclusao|date:"d/m/Y H:i"|default:"None" }} |
+                                Dias: {{ producao.dias_calculados }} |
+                                Horas: {{ producao.horas_minutos }} |
+                                Total: {{ producao.tempo_total_formatado }}
+                            </td>
+                        </tr>
+                        -->
+                        
+                        {% empty %}
+                        <tr>
+                            <td colspan="14" class="text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Nenhum projeto encontrado</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Paginação (mantenha como está) -->
+        {% if producoes.has_other_pages %}
+        <div class="card-footer">
+            <nav aria-label="Paginação">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if producoes.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% include 'includes/pagination_params.html' with page=producoes.previous_page_number %}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in producoes.paginator.page_range %}
+                        {% if num == producoes.number %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > producoes.number|add:'-3' and num < producoes.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% include 'includes/pagination_params.html' with page=num %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if producoes.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% include 'includes/pagination_params.html' with page=producoes.next_page_number %}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Estilos customizados para as cores */
+.card.border-start-primary {
+    border-left-color: #0d6efd !important;
+}
+
+.card.border-start-success {
+    border-left-color: #198754 !important;
+}
+
+.card.border-start-warning {
+    border-left-color: #ffc107 !important;
+}
+
+.card.border-start-orange {
+    border-left-color: #fd7e14 !important;
+}
+
+.card.border-start-brown {
+    border-left-color: #795548 !important;
+}
+
+.card.border-start-purple {
+    border-left-color: #6f42c1 !important;
+}
+
+/* Efeito de hover nos cards */
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-in-out;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* Para o badge de pendentes com cor laranja */
+.badge[style*="background-color: #fd7e14"] {
+    color: white !important;
+}
+
+/* Para tabela responsiva */
+.table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+}
+</style>

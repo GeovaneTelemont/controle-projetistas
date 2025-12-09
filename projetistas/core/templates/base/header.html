@@ -36,6 +36,7 @@
                             <i class="fas fa-home me-1"></i>Dashboard
                         </a>
                     </li>
+                    {% if not user.is_superuser %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {% if request.path == producao_url or '/producao/' in request.path %}active{% endif %}" 
                            href="#" role="button" data-bs-toggle="dropdown">
@@ -46,16 +47,17 @@
                                    href="{% url 'producao' %}"><i class="fas fa-play-circle me-2"></i>Iniciar Produção</a></li>
                         </ul>
                     </li>
+                    {% endif %}
                     {% if user.is_superuser %}
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
+                        <a class="nav-link {% if request.path == relatorios_url %}active{% endif %}" href="{% url 'relatorios' %}" >
                             <i class="fas fa-chart-bar me-1"></i>Relatórios
                         </a>
                     </li>
                     {% endif %}
                     {% if user.is_superuser %}
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
+                        <a class="nav-link" href="{% url 'admin:index' %}">
                             <i class="fas fa-cog me-1"></i>Administração
                         </a>
                     </li>
@@ -129,11 +131,12 @@
                                
                                 
                                 {% if user.is_superuser %}
-                                <li><hr class="dropdown-divider"></li>
+                                <!-- Link para Exportar dados -->
+                                <!-- <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#exportModal">
                                     <i class="fas fa-file-excel me-2"></i>Exportar Dados
                                 </a></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i>Dashboard Admin</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i>Dashboard Admin</a></li> -->
                                 {% endif %}
                                 
                                 <li><hr class="dropdown-divider"></li>
