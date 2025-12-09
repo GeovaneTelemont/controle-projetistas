@@ -1074,5 +1074,3 @@ def producao(request):
     
     return render(request, 'producao.html', context)
 
-def producao_inativos(request):
-    return render(request, 'producao_inativos.html')

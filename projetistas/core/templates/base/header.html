@@ -44,15 +44,15 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item {% if request.path == producao_url %}active{% endif %}" 
                                    href="{% url 'producao' %}"><i class="fas fa-play-circle me-2"></i>Iniciar Produção</a></li>
-                            <li><a class="dropdown-item" href="{% url 'producao-inativos' %}"><i class="fas fa-tasks me-2"></i>Produção Concluidas e Canceladas</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-history me-2"></i>Histórico</a></li>
                         </ul>
                     </li>
+                    {% if user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link" href="#">
                             <i class="fas fa-chart-bar me-1"></i>Relatórios
                         </a>
                     </li>
+                    {% endif %}
                     {% if user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link" href="#">
@@ -68,7 +68,8 @@
                     
                     <!-- Notificações -->
                     {% if user.is_authenticated %}
-                    <div class="dropdown me-3">
+                    <!-- Notificação para o sistema desativada -->
+                    <!-- <div class="dropdown me-3">
                         <button class="btn btn-light position-relative" type="button" data-bs-toggle="dropdown">
                             <i class="fas fa-bell"></i>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
@@ -82,7 +83,7 @@
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-center" href="#">Ver todas</a></li>
                         </ul>
-                    </div>
+                    </div> -->
                     {% endif %}
                     
                     <!-- Perfil do Usuário -->
@@ -115,7 +116,7 @@
                                 <li><h6 class="dropdown-header">Minha Conta</h6></li>
                                 <li><a class="dropdown-item {% if request.path == perfil_url %}active{% endif %}" 
                                        href="{% url 'perfil' %}"><i class="fas fa-user-circle me-2"></i>Meu Perfil</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configurações</a></li>
+                               
                                 
                                 {% if user.is_superuser %}
                                 <li><hr class="dropdown-divider"></li>
@@ -150,7 +151,7 @@
     <div class="container-fluid px-4 py-2 bg-light border-top">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+                
                 {% block breadcrumb %}{% endblock %}
             </ol>
         </nav>

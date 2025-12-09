@@ -1,0 +1,417 @@
+{% load static %}
+<div class="perfil-container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="fas 
+                    {% if message.tags == 'success' %}fa-check-circle
+                    {% elif message.tags == 'error' %}fa-exclamation-circle
+                    {% else %}fa-info-circle{% endif %} me-2">
+                </i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Editar Perfil</h5>
+        </div>
+        <div class="card-body">
+            
+            <!-- Seção Foto de Perfil -->
+            <div class="row mb-4">
+                <div class="col-md-3 text-center">
+                    {% if profile.foto %}
+                        <img src="{{ profile.foto.url }}" class="rounded-circle img-thumbnail mb-3" 
+                             width="150" height="150" alt="Foto de perfil" id="avatar-preview">
+                    {% else %}
+                        <div class="default-avatar rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" 
+                             style="width: 150px; height: 150px; background: linear-gradient(135deg, #4361ee, #3f37c9); color: white; font-size: 3rem;"
+                             id="avatar-preview-default">
+                            {{ user.get_full_name|default:user.username|first|upper }}
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'perfil' %}" enctype="multipart/form-data" class="mt-2">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="file" name="foto" class="form-control form-control-sm" 
+                                   accept="image/*" id="foto-input" style="display: none;">
+                            <button type="button" class="btn btn-sm btn-primary w-100" onclick="document.getElementById('foto-input').click()">
+                                <i class="fas fa-camera me-1"></i> Alterar Foto
+                            </button>
+                        </div>
+                        <div id="foto-nome" class="small text-muted mt-1"></div>
+                        
+                        {% if profile.foto %}
+                        <button type="submit" name="remover_foto" class="btn btn-sm btn-outline-danger w-100 mt-2">
+                            <i class="fas fa-trash me-1"></i> Remover Foto
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Botão oculto para submit da foto -->
+                        <button type="submit" name="update_avatar" class="d-none" id="submit-foto"></button>
+                    </form>
+                </div>
+                
+                <div class="col-md-9">
+                    <h4>{{ user.get_full_name|default:user.username }}</h4>
+                    <p class="text-muted">{{ user.email }}</p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <small>Faça upload de uma foto para personalizar seu perfil. Formatos suportados: JPG, PNG, GIF. Tamanho máximo: 2MB.</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Informações Pessoais -->
+            <div class="mb-4">
+                <h6 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-user-edit me-2"></i>Informações Pessoais
+                </h6>
+                <form method="post" action="{% url 'perfil' %}">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Nome</label>
+                            <input type="text" name="first_name" class="form-control" 
+                                   value="{{ user.first_name }}" 
+                                   placeholder="Digite seu nome" required>
+                            {% if user_form.first_name.errors %}
+                                <div class="text-danger small mt-1">{{ user_form.first_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Sobrenome</label>
+                            <input type="text" name="last_name" class="form-control" 
+                                   value="{{ user.last_name }}" 
+                                   placeholder="Digite seu sobrenome" required>
+                            {% if user_form.last_name.errors %}
+                                <div class="text-danger small mt-1">{{ user_form.last_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Nome de Usuário</label>
+                            <input type="text" name="username" class="form-control" 
+                                   value="{{ user.username }}" required 
+                                   placeholder="Digite seu nome de usuário">
+                            {% if user_form.username.errors %}
+                                <div class="text-danger small mt-1">{{ user_form.username.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                <small><i class="fas fa-info-circle me-1"></i> Este é o nome que você usa para fazer login</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Email</label>
+                            <input type="email" name="email" class="form-control" 
+                                   value="{{ user.email }}" required 
+                                   placeholder="Digite seu email">
+                            {% if user_form.email.errors %}
+                                <div class="text-danger small mt-1">{{ user_form.email.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                <small><i class="fas fa-info-circle me-1"></i> Seu endereço de email</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="submit" name="update_profile" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>Salvar Informações
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Alterar Senha -->
+            <div class="mt-4 pt-4 border-top">
+                <h6 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-lock me-2"></i>Alterar Senha
+                </h6>
+                <form method="post" action="{% url 'perfil' %}">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Senha Atual</label>
+                            <input type="password" name="old_password" class="form-control" required 
+                                   placeholder="Digite sua senha atual">
+                            <div class="form-text">
+                                <small><i class="fas fa-info-circle me-1"></i> Digite sua senha atual</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Nova Senha</label>
+                            <input type="password" name="new_password1" class="form-control" required 
+                                   placeholder="Digite a nova senha">
+                            <div class="form-text">
+                                <small><i class="fas fa-info-circle me-1"></i> Mínimo de 8 caracteres</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Confirmar Senha</label>
+                            <input type="password" name="new_password2" class="form-control" required 
+                                   placeholder="Confirme a nova senha">
+                            <div class="form-text">
+                                <small><i class="fas fa-info-circle me-1"></i> Digite novamente a nova senha</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="submit" name="change_password" class="btn btn-warning btn-lg">
+                            <i class="fas fa-key me-2"></i>Alterar Senha
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .perfil-container .form-control {
+        border-radius: 8px;
+        padding: 0.75rem;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        background-color: #ffffff;
+    }
+    
+    .perfil-container .form-control:focus {
+        border-color: #4361ee;
+        box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
+    }
+    
+    .perfil-container .btn-primary {
+        background: linear-gradient(135deg, #4361ee, #4895ef);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .perfil-container .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+    }
+    
+    .perfil-container .btn-warning {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+        font-size: 1rem;
+        color: #000;
+        transition: all 0.3s ease;
+    }
+    
+    .perfil-container .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+    }
+    
+    .perfil-container .btn-outline-danger {
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+    }
+    
+    .perfil-container .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+    
+    .perfil-container .card-header {
+        border-radius: 12px 12px 0 0 !important;
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #4361ee, #3f37c9) !important;
+    }
+    
+    .perfil-container .card-body {
+        padding: 2rem;
+    }
+    
+    .perfil-container h6 {
+        color: #4361ee;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    .perfil-container .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .perfil-container .form-text {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    
+    .perfil-container .default-avatar {
+        font-weight: bold;
+        background: linear-gradient(135deg, #4361ee, #3f37c9);
+        color: white;
+    }
+    
+    .perfil-container .border-top {
+        border-top-color: #e9ecef !important;
+    }
+    
+    .perfil-container .border-bottom {
+        border-bottom-color: #e9ecef !important;
+    }
+    
+    .perfil-container .img-thumbnail {
+        border: 3px solid #dee2e6;
+        padding: 0.25rem;
+        object-fit: cover;
+    }
+    
+    .perfil-container .alert-info {
+        border-radius: 8px;
+        border: none;
+        background-color: rgba(67, 97, 238, 0.1);
+        color: #4361ee;
+    }
+    
+    @media (max-width: 768px) {
+        .perfil-container .card-body {
+            padding: 1.5rem;
+        }
+        
+        .perfil-container .btn-primary,
+        .perfil-container .btn-warning {
+            width: 100%;
+        }
+        
+        .perfil-container .row {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Preview da foto selecionada
+    const fotoInput = document.getElementById('foto-input');
+    const avatarPreview = document.getElementById('avatar-preview');
+    const avatarPreviewDefault = document.getElementById('avatar-preview-default');
+    const fotoNome = document.getElementById('foto-nome');
+    const submitFotoBtn = document.getElementById('submit-foto');
+    
+    if (fotoInput) {
+        fotoInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                const fileName = file.name;
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+                
+                // Validação básica
+                if (!file.type.match('image.*')) {
+                    alert('Por favor, selecione apenas arquivos de imagem.');
+                    this.value = '';
+                    return;
+                }
+                
+                if (fileSize > 2) {
+                    alert('A imagem deve ter no máximo 2MB.');
+                    this.value = '';
+                    return;
+                }
+                
+                // Mostra o nome do arquivo
+                fotoNome.textContent = `${fileName} (${fileSize}MB)`;
+                
+                // Preview da imagem
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (avatarPreview) {
+                        avatarPreview.src = e.target.result;
+                    } else {
+                        // Se não existe preview, cria um
+                        const newImg = document.createElement('img');
+                        newImg.src = e.target.result;
+                        newImg.className = 'rounded-circle img-thumbnail mb-3';
+                        newImg.width = 150;
+                        newImg.height = 150;
+                        newImg.alt = 'Foto de perfil';
+                        newImg.id = 'avatar-preview';
+                        
+                        if (avatarPreviewDefault) {
+                            avatarPreviewDefault.parentNode.replaceChild(newImg, avatarPreviewDefault);
+                        }
+                    }
+                };
+                reader.readAsDataURL(file);
+                
+                // Envia automaticamente
+                setTimeout(() => {
+                    submitFotoBtn.click();
+                }, 100);
+            }
+        });
+    }
+    
+    // Validação de email
+    const emailInput = document.querySelector('input[name="email"]');
+    if (emailInput) {
+        emailInput.addEventListener('blur', function() {
+            const email = this.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (email && !emailRegex.test(email)) {
+                this.classList.add('is-invalid');
+                const errorDiv = this.nextElementSibling;
+                if (errorDiv && errorDiv.classList.contains('text-danger')) {
+                    errorDiv.textContent = 'Por favor, insira um email válido.';
+                }
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Validação de senha
+    const senhaInput1 = document.querySelector('input[name="new_password1"]');
+    const senhaInput2 = document.querySelector('input[name="new_password2"]');
+    
+    if (senhaInput1 && senhaInput2) {
+        function validatePasswords() {
+            if (senhaInput1.value && senhaInput2.value) {
+                if (senhaInput1.value !== senhaInput2.value) {
+                    senhaInput2.classList.add('is-invalid');
+                } else {
+                    senhaInput2.classList.remove('is-invalid');
+                }
+                
+                if (senhaInput1.value.length < 8) {
+                    senhaInput1.classList.add('is-invalid');
+                } else {
+                    senhaInput1.classList.remove('is-invalid');
+                }
+            }
+        }
+        
+        senhaInput1.addEventListener('input', validatePasswords);
+        senhaInput2.addEventListener('input', validatePasswords);
+    }
+});
+</script>
