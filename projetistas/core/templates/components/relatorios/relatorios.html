@@ -1,33 +1,34 @@
-{% block title %}Relatórios de Produção{% endblock %}
+
 {% load static %}
 
 <div class="container-fluid py-4">
-    <!-- Cabeçalho -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-2">Relatórios de Produção</h1>
-            <p class="text-muted mb-0">Visualize e exporte os dados de produção</p>
-        </div>
-        <div>
-            <form method="GET" action="{% url 'exportar_excel' %}" class="d-inline">
-                <input type="hidden" name="exportar_excel" value="1">
-                {% for key, value in request.GET.items %}
-                    {% if key != 'exportar_excel' and key != 'page' %}
-                        <input type="hidden" name="{{ key }}" value="{{ value }}">
-                    {% endif %}
-                {% endfor %}
-                {% if is_superuser %}
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-file-excel me-1"></i> Exportar Excel
-                </button>
-                {% endif %}
-            </form>
-        </div>
-    </div>
+    
 
     <!-- Filtros (mantenha como está) -->
     <div class="card shadow mb-4">
         <div class="card-header bg-primary text-white py-3">
+            <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-2">Relatórios de Produção</h1>
+                <p class=" color-white mb-0">Visualize e exporte os dados de produção</p>
+            </div>
+            <div>
+                <form method="GET" action="{% url 'exportar_excel' %}" class="d-inline">
+                    <input type="hidden" name="exportar_excel" value="1">
+                    {% for key, value in request.GET.items %}
+                        {% if key != 'exportar_excel' and key != 'page' %}
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                    {% if is_superuser %}
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-file-excel me-1"></i> Exportar Excel
+                    </button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
             <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros</h5>
         </div>
         <div class="card-body">
@@ -232,197 +233,205 @@
         </div>
     </div>
 
-    <!-- Tabela - MODIFICADA para ter as mesmas colunas da planilha -->
-    <div class="card shadow">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>DC/ID</th>
-                            <th>PROJETISTAS</th>
-                            <th>TIPO DE PROJETO</th>
-                            <th>CATEGORIA</th>
-                            <th>STATUS</th>
-                            <th>MOTIVO DE STATUS</th>
-                            <th class="text-end">METRAGEM (M)</th>
-                            <th>DATA DO PROJETO</th>
-                            <th>DATA/HORA INÍCIO</th>
-                            <th>DATA/HORA TÉRMINO</th>
-                            <th class="text-center">DIAS</th>
-                            <th class="text-center">HORAS</th>
-                            <th>TEMPO TOTAL</th>
-                            <th>OBSERVAÇÕES GERAIS</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for producao in producoes %}
-                        <tr>
-                            <td><strong>{{ producao.dc_id }}</strong></td>
-                            <td>{{ producao.projetista.get_full_name|default:producao.projetista.username }}</td>
-                            <td>{{ producao.tipo_projeto.nome|default:"-" }}</td>
-                            <td>{{ producao.categoria.nome|default:"-" }}</td>
-                            <td>
-                                {% if producao.status == 'CONCLUIDO' %}
-                                <span class="badge bg-success">{{ producao.get_status_display }}</span>
-                                {% elif producao.status == 'EM_ANDAMENTO' %}
-                                <span class="badge bg-warning text-dark">{{ producao.get_status_display }}</span>
-                                {% elif producao.status == 'PENDENTE' %}
-                                <span class="badge" style="background-color: #fd7e14;">{{ producao.get_status_display }}</span>
-                                {% elif producao.status == 'REVISAO' %}
-                                <span class="badge bg-info">{{ producao.get_status_display }}</span>
-                                {% elif producao.status == 'CANCELADO' %}
-                                <span class="badge bg-danger">{{ producao.get_status_display }}</span>
-                                {% else %}
-                                <span class="badge bg-secondary">{{ producao.get_status_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ producao.motivo_status_display|default:"-" }}</td>
-                            <td class="text-end">{{ producao.metragem_cabo|floatformat:2 }}</td>
-                            <td>{{ producao.data|date:"d/m/Y" }}</td>
-                            <td>
-                                {% if producao.data_inicio %}
-                                    {{ producao.data_inicio|date:"d/m/Y H:i" }}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if producao.status == 'CONCLUIDO' and producao.data_conclusao %}
-                                    {{ producao.data_conclusao|date:"d/m/Y H:i" }}
-                                {% elif producao.status == 'CANCELADO' and producao.data_cancelamento %}
-                                    {{ producao.data_cancelamento|date:"d/m/Y H:i" }}
-                                {% elif producao.status == 'EM_ANDAMENTO' %}
-                                    <span class="text-warning">EM ANDAMENTO</span>
-                                {% elif producao.status == 'PENDENTE' %}
-                                    <span class="text-muted">-</span>
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                {% if producao.status in 'CONCLUIDO,CANCELADO' %}
-                                    {{ producao.dias_calculados|default:"0" }}
-                                {% elif producao.status == 'EM_ANDAMENTO' and producao.data_inicio %}
-                                    {{ producao.dias_calculados|default:"0" }}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                {% if producao.status in 'CONCLUIDO,CANCELADO' %}
-                                    {{ producao.horas_minutos|default:"00:00" }}
-                                {% elif producao.status == 'EM_ANDAMENTO' and producao.data_inicio %}
-                                    {{ producao.horas_minutos|default:"00:00" }}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if producao.status in 'CONCLUIDO,CANCELADO' %}
-                                    {{ producao.tempo_total_formatado|default:"00:00" }}
-                                {% elif producao.status == 'EM_ANDAMENTO' and producao.data_inicio %}
-                                    {{ producao.tempo_total_formatado|default:"00:00" }}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td class="small">{{ producao.observacoes|default:"-"|truncatechars:50 }}</td>
-                        </tr>
-                        
-                        {% comment %} Linha de debug opcional {% endcomment %}
-                        <!-- 
-                        <tr style="background-color: #f8f9fa;">
-                            <td colspan="14" class="small text-muted">
-                                <strong>DEBUG:</strong> 
-                                Status: '{{ producao.status }}' | 
-                                Data Início: {{ producao.data_inicio|date:"d/m/Y H:i"|default:"None" }} |
-                                Data Conclusão: {{ producao.data_conclusao|date:"d/m/Y H:i"|default:"None" }} |
-                                Dias: {{ producao.dias_calculados }} |
-                                Horas: {{ producao.horas_minutos }} |
-                                Total: {{ producao.tempo_total_formatado }}
-                            </td>
-                        </tr>
-                        -->
-                        
-                        {% empty %}
-                        <tr>
-                            <td colspan="14" class="text-center py-5">
-                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">Nenhum projeto encontrado</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+   <!-- Tabela - MODIFICADA para ter as mesmas colunas da planilha -->
+<div class="card shadow">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Resultados</h5>
+        <div class="text-muted small">
+            Mostrando {{ producoes.start_index }} a {{ producoes.end_index }} de {{ producoes.paginator.count }} registros
         </div>
-        
-        <!-- Paginação (mantenha como está) -->
-        {% if producoes.has_other_pages %}
-        <div class="card-footer">
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>DC/ID</th>
+                        <th>PROJETISTAS</th>
+                        <th>TIPO DE PROJETO</th>
+                        <th>CATEGORIA</th>
+                        <th>STATUS</th>
+                        <th>MOTIVO DE STATUS</th>
+                        <th class="text-end">METRAGEM (M)</th>
+                        <th>DATA DO PROJETO</th>
+                        <th>DATA/HORA INÍCIO</th>
+                        <th>DATA/HORA TÉRMINO</th>
+                        <th>TEMPO TOTAL</th>
+                        <th>OBSERVAÇÕES GERAIS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producao in producoes %}
+                    <tr>
+                        <td><strong>{{ producao.dc_id }}</strong></td>
+                        <td>{{ producao.projetista.get_full_name|default:producao.projetista.username }}</td>
+                        <td>{{ producao.tipo_projeto.nome|default:"-" }}</td>
+                        <td>{{ producao.categoria.nome|default:"-" }}</td>
+                        <td>
+                            {% if producao.status == 'CONCLUIDO' %}
+                            <span class="badge bg-success">{{ producao.get_status_display }}</span>
+                            {% elif producao.status == 'EM_ANDAMENTO' %}
+                            <span class="badge bg-warning text-dark">{{ producao.get_status_display }}</span>
+                            {% elif producao.status == 'PENDENTE' %}
+                            <span class="badge" style="background-color: #fd7e14;">{{ producao.get_status_display }}</span>
+                            {% elif producao.status == 'REVISAO' %}
+                            <span class="badge bg-info">{{ producao.get_status_display }}</span>
+                            {% elif producao.status == 'CANCELADO' %}
+                            <span class="badge bg-danger">{{ producao.get_status_display }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ producao.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ producao.motivo_status|default:"-" }}</td>
+                        <td class="text-end">{{ producao.metragem_cabo|floatformat:2 }}</td>
+                        <td>{{ producao.data|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if producao.data_inicio %}
+                                {{ producao.data_inicio|date:"d/m/Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if producao.status == 'CONCLUIDO' and producao.data_conclusao %}
+                                {{ producao.data_conclusao|date:"d/m/Y H:i" }}
+                            {% elif producao.status == 'CANCELADO' and producao.data_cancelamento %}
+                                {{ producao.data_cancelamento|date:"d/m/Y H:i" }}
+                            {% elif producao.status == 'EM_ANDAMENTO' %}
+                                <span class="text-warning">EM ANDAMENTO</span>
+                            {% elif producao.status == 'PENDENTE' %}
+                                <span class="text-muted">-</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if producao.tempo_total_formatado %}
+                                {{ producao.tempo_total_formatado }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">{{ producao.observacoes|default:"-"|truncatechars:50 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="12" class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhum projeto encontrado</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Paginação -->
+    {% if producoes.paginator.num_pages > 1 %}
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted small">
+                Página {{ producoes.number }} de {{ producoes.paginator.num_pages }}
+            </div>
+            
             <nav aria-label="Paginação">
-                <ul class="pagination justify-content-center mb-0">
+                <ul class="pagination mb-0">
+                    <!-- Primeira página -->
                     {% if producoes.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?{% include 'includes/pagination_params.html' with page=producoes.previous_page_number %}">
+                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ producoes.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
                             <i class="fas fa-chevron-left"></i>
                         </a>
                     </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                    </li>
                     {% endif %}
                     
+                    <!-- Números das páginas -->
                     {% for num in producoes.paginator.page_range %}
-                        {% if num == producoes.number %}
-                        <li class="page-item active">
-                            <span class="page-link">{{ num }}</span>
-                        </li>
-                        {% elif num > producoes.number|add:'-3' and num < producoes.number|add:'3' %}
-                        <li class="page-item">
-                            <a class="page-link" href="?{% include 'includes/pagination_params.html' with page=num %}">{{ num }}</a>
-                        </li>
+                        {% if num >= producoes.number|add:"-2" and num <= producoes.number|add:"2" %}
+                            {% if num == producoes.number %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
                         {% endif %}
                     {% endfor %}
                     
+                    <!-- Última página -->
                     {% if producoes.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?{% include 'includes/pagination_params.html' with page=producoes.next_page_number %}">
+                        <a class="page-link" href="?page={{ producoes.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
                             <i class="fas fa-chevron-right"></i>
                         </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ producoes.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
                     </li>
                     {% endif %}
                 </ul>
             </nav>
         </div>
-        {% endif %}
     </div>
+    {% endif %}
 </div>
 
 <style>
 /* Estilos customizados para as cores */
 .card.border-start-primary {
     border-left-color: #0d6efd !important;
+    border-left-width: 5px !important; /* Ajuste o valor conforme necessário */
 }
 
 .card.border-start-success {
     border-left-color: #198754 !important;
+    border-left-width: 5px !important;
 }
 
 .card.border-start-warning {
     border-left-color: #ffc107 !important;
+    border-left-width: 5px !important;
 }
 
 .card.border-start-orange {
     border-left-color: #fd7e14 !important;
+    border-left-width: 5px !important;
 }
 
 .card.border-start-brown {
     border-left-color: #795548 !important;
+    border-left-width: 5px !important;
 }
 
 .card.border-start-purple {
     border-left-color: #6f42c1 !important;
+    border-left-width: 5px !important;
 }
-
 /* Efeito de hover nos cards */
 .card:hover {
     transform: translateY(-2px);

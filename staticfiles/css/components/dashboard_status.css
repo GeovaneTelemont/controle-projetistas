@@ -1,0 +1,42 @@
+.status-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-completed {
+    background-color: rgba(76, 201, 240, 0.15);
+    color: #0d6efd;
+}
+
+.status-pending {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #fd7e14;
+}
+
+.status-cancelled {
+    background-color: rgba(247, 37, 133, 0.15);
+    color: #dc3545;
+}
+
+.status-in-progress {
+    background-color: rgba(32, 201, 151, 0.15);
+    color: #20a362;
+}
+
+.status-review {
+    background-color: rgba(147, 51, 234, 0.15);
+    color: #9333ea;
+}
+.stats-card {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+    color: white;
+}
+.stats-card.pendente { background: linear-gradient(135deg, #fd7e14, #ff922b); }
+.stats-card.andamento { background: linear-gradient(135deg, #a8a81b, #dede1e); }
+.stats-card.revisao { background: linear-gradient(135deg, #9333ea, #a855f7); }
+.stats-card.concluido { background: linear-gradient(135deg, #119322, #17aa2b); }
+.stats-card.cancelado { background: linear-gradient(135deg, #dc3545, #e74c3c); }
