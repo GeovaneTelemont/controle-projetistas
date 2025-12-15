@@ -192,31 +192,46 @@
                             </td>
                             
                             <!-- Projetista -->
-                            <td class="align-middle">
-                                <div class="d-flex align-items-center">
-                                    <div class="user-avatar small">
-                                            {% if producao.projetista and producao.projetista.username %}
-                                                {{ producao.projetista.username|first|upper }}
-                                            {% else %}
-                                                ?
-                                            {% endif %}
-                                    </div>
-                                    <div class="user-info">
-                                        <div class="user-name fw-medium">
-                                            {% if producao.projetista %}
-                                                {{ producao.projetista.get_short_name|default:producao.projetista.username }}
-                                            {% else %}
-                                                <span class="text-muted">N/A</span>
-                                            {% endif %}
-                                        </div>
-                                        <small class="text-muted user-email">
-                                            {% if producao.projetista.email %}
-                                                {{ producao.projetista.email|truncatechars:15 }}
-                                            {% endif %}
-                                        </small>
-                                    </div>
-                                </div>
-                            </td>
+                           <td class="align-middle">
+    <div class="d-flex align-items-center">
+        <div class="user-avatar small me-3 position-relative">
+            <!-- Verifica se o projetista tem foto no perfil -->
+            {% if producao.projetista and producao.projetista.profile.foto %}
+                <!-- TEM FOTO - mostra a imagem -->
+                <img src="{{ producao.projetista.profile.foto.url }}" 
+                     alt="{{ producao.projetista.get_short_name|default:producao.projetista.username }}"
+                     class="rounded-circle"
+                     width="40"
+                     height="40"
+                     style="object-fit: cover;">
+            {% else %}
+                <!-- NÃO TEM FOTO - mostra inicial -->
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                     style="width: 40px; height: 40px; background-color: #4361ee; color: white; font-weight: bold; font-size: 14px;">
+                    {% if producao.projetista and producao.projetista.username %}
+                        {{ producao.projetista.username|first|upper }}
+                    {% else %}
+                        ?
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="user-info">
+            <div class="user-name fw-medium">
+                {% if producao.projetista %}
+                    {{ producao.projetista.get_short_name|default:producao.projetista.username }}
+                {% else %}
+                    <span class="text-muted">N/A</span>
+                {% endif %}
+            </div>
+            <small class="text-muted user-email">
+                {% if producao.projetista.email %}
+                    {{ producao.projetista.email|truncatechars:15 }}
+                {% endif %}
+            </small>
+        </div>
+    </div>
+</td>
                             
                             <!-- Tipo de Projeto -->
                             <td class="align-middle">

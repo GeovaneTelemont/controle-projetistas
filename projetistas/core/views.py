@@ -363,11 +363,12 @@ def perfil(request):
     }
     return render(request, 'registration/perfil.html', context)
 
-
 def dashboard(request):
     """
     View para a página inicial.
     """
+    user = User.objects.all().filter(id=request.user.id).first()
+
     # Obter parâmetros
     data_filtro = request.GET.get('data_filtro')
     ver_todos = request.GET.get('ver_todos', 'false')  # Novo parâmetro com valor padrão
@@ -457,8 +458,10 @@ def dashboard(request):
     projetistas_data = []
     totais_por_tipo = {}
     projetistas_dict = {}
+
     
     for item in projetos_por_tipo:
+        
         projetista_id = item['projetista__id']
         
         if projetista_id not in projetistas_dict:
@@ -467,19 +470,28 @@ def dashboard(request):
             if not nome:
                 nome = item['projetista__username']
             
-            # Obter o usuário para acessar a foto de perfil
+            # CORREÇÃO: Buscar o usuário CORRETO pelo ID, não usar o 'user' logado
             try:
-                user = User.objects.get(id=projetista_id)
-                # Verificar se o usuário tem foto de perfil (ajuste conforme seu modelo)
-                foto_url = user.foto.url if hasattr(user, 'foto') and user.foto else None
+                usuario_correto = User.objects.get(id=projetista_id)  # ← MUDANÇA AQUI
             except User.DoesNotExist:
-                foto_url = None
+                continue  # Pula se o usuário não existir
+            
+            # CORREÇÃO: Pegar a foto do usuário CORRETO
+            foto_url = None
+            try:
+                # usuario_correto.profile, não user.profile
+                if hasattr(usuario_correto, 'profile') and usuario_correto.profile.foto:
+                    foto_url = usuario_correto.profile.foto.url
+            except Profile.DoesNotExist:
+                # Cria profile se não existir
+                Profile.objects.create(user=usuario_correto)
             
             projetistas_dict[projetista_id] = {
                 'id': projetista_id,
                 'username': item['projetista__username'],
+                'email': usuario_correto.email if usuario_correto else '',  # ← MUDANÇA AQUI
                 'nome': nome,
-                'foto_url': foto_url,  # Adiciona a URL da foto
+                'foto': foto_url,  # ← MUDADO de 'foto_url' para 'foto'
                 'tipos': {},
                 'total': 0
             }
@@ -772,25 +784,24 @@ def producao(request):
             metragem_cabo = request.POST.get('metragem_cabo', 0) or 0
             observacoes = request.POST.get('observacoes', '')
             
-            if Producao.objects.filter(dc_id=dc_id).exists():
-                messages.error(request, f'O DC/ID {dc_id} já está em uso!')
-            else:
-                try:
-                    producao_obj = Producao.objects.create(
-                        dc_id=dc_id,
-                        data=data,
-                        projetista=request.user,
-                        tipo_projeto_id=tipo_projeto_id,
-                        categoria_id=categoria_id,
-                        metragem_cabo=metragem_cabo,
-                        status='EM_ANDAMENTO',
-                        motivo_status='Iniciando projeto',
-                        observacoes=observacoes
-                    )
-                    messages.success(request, f'Produção {dc_id} criada com sucesso!')
-                    return redirect('producao')
-                except Exception as e:
-                    messages.error(request, f'Erro ao criar produção: {str(e)}')
+            
+            
+            try:
+                producao_obj = Producao.objects.create(
+                    dc_id=dc_id,
+                    data=data,
+                    projetista=request.user,
+                    tipo_projeto_id=tipo_projeto_id,
+                    categoria_id=categoria_id,
+                    metragem_cabo=metragem_cabo,
+                    status='EM_ANDAMENTO',
+                    motivo_status='Iniciando projeto',
+                    observacoes=observacoes
+                )
+                messages.success(request, f'Produção {dc_id} criada com sucesso!')
+                return redirect('producao')
+            except Exception as e:
+                messages.error(request, f'Erro ao criar produção: {str(e)}')
         
         # ========== EDIÇÃO INDIVIDUAL ==========
         elif 'editar_dc_id' in request.POST:

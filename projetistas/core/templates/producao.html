@@ -1,10 +1,10 @@
 <!-- home.html -->
 {% extends 'base.html' %}
-
+{% load static %}
 {% block title %}Dashboard Principal{% endblock %}
 
 {% block extra_css %}
-    
+    <link rel="stylesheet" href="{% static 'css/components/producao/producao.css' %}">
 {% endblock %}
 
 {% block content %}

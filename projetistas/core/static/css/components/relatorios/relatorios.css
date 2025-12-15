@@ -1,0 +1,47 @@
+/* Estilos customizados para as cores */
+.card.border-start-primary {
+    border-left-color: #0d6efd !important;
+    border-left-width: 5px !important; /* Ajuste o valor conforme necessário */
+}
+
+.card.border-start-success {
+    border-left-color: #198754 !important;
+    border-left-width: 5px !important;
+}
+
+.card.border-start-warning {
+    border-left-color: #ffc107 !important;
+    border-left-width: 5px !important;
+}
+
+.card.border-start-orange {
+    border-left-color: #fd7e14 !important;
+    border-left-width: 5px !important;
+}
+
+.card.border-start-brown {
+    border-left-color: #795548 !important;
+    border-left-width: 5px !important;
+}
+
+.card.border-start-purple {
+    border-left-color: #6f42c1 !important;
+    border-left-width: 5px !important;
+}
+/* Efeito de hover nos cards */
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-in-out;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* Para o badge de pendentes com cor laranja */
+.badge[style*="background-color: #fd7e14"] {
+    color: white !important;
+}
+
+/* Para tabela responsiva */
+.table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+}

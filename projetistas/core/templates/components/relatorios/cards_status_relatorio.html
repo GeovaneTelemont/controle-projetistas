@@ -1,0 +1,89 @@
+{% load static %}
+    <!-- Estatísticas com cores específicas (mantenha como está) -->
+    <div class="row mb-4">
+        <!-- TOTAL - AZUL -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-primary border-start-4 shadow-sm h-100" 
+                 style="border-left-color: #0d6efd !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">TOTAL</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #0d6efd;">{{ total_projetos }}</div>
+                    <div class="mt-2 small text-muted">Projetos registrados</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CONCLUÍDOS - VERDE -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-success border-start-4 shadow-sm h-100"
+                 style="border-left-color: #198754 !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">CONCLUÍDOS</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #198754;">{{ projetos_concluidos }}</div>
+                    <div class="mt-2 small text-muted">
+                        {% if total_projetos > 0 %}
+                        {{ projetos_concluidos|floatformat:0 }}% do total
+                        {% else %}
+                        0%
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- EM ANDAMENTO - AMARELO -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-warning border-start-4 shadow-sm h-100"
+                 style="border-left-color: #ffc107 !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">EM ANDAMENTO</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #ffc107;">{{ projetos_andamento }}</div>
+                    <div class="mt-2 small text-muted">Projetos ativos</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- PENDENTES - LARANJA -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-orange border-start-4 shadow-sm h-100"
+                 style="border-left-color: #fd7e14 !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">PENDENTES</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #fd7e14;">{{ projetos_pendentes }}</div>
+                    <div class="mt-2 small text-muted">Aguardando início</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- METRAGEM TOTAL - MARRON -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-brown border-start-4 shadow-sm h-100"
+                 style="border-left-color: #795548 !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">METRAGEM TOTAL</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #795548;">{{ metragem_total|floatformat:2 }} m</div>
+                    <div class="mt-2 small text-muted">
+                        {% if projetos_concluidos > 0 %}
+                        {{ metragem_media|floatformat:2 }}m/média
+                        {% else %}
+                        0m/média
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TEMPO MÉDIO - ROXO -->
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card border-start-purple border-start-4 shadow-sm h-100"
+                 style="border-left-color: #6f42c1 !important;">
+                <div class="card-body p-3">
+                    <div class="text-muted small text-uppercase fw-semibold">TEMPO MÉDIO</div>
+                    <div class="h3 mb-0 fw-bold" style="color: #6f42c1;">
+                        {{ tempo_medio_formatado }}
+                    </div>
+                    <div class="mt-2 small text-muted">Por projeto</div>
+                </div>
+            </div>
+        </div>
+    </div>

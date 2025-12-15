@@ -3,7 +3,16 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 from django.utils.html import format_html
 from .models import Producao, TipoProjeto, Categoria, Profile, HistoricoStatus, RegistroExclusao
+from django.apps import apps
 
+core = apps.get_app_config('core')
+
+core.verbose_name = "Base de dados de Projetistas"
+
+
+admin.site.site_header = "ProdManager - Administração de Projetistas"
+admin.site.site_title = "ProdManager Admin"
+admin.site.index_title = "Administração de Projetistas"
 
 @admin.register(RegistroExclusao)
 class RegistroExclusaoAdmin(admin.ModelAdmin):

@@ -1,0 +1,140 @@
+{% load static %}
+<div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white py-3">
+        <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2">Relatórios de Produção</h1>
+            <p class=" color-white mb-0">Visualize e exporte os dados de produção</p>
+        </div>
+        <div>
+            <form method="GET" action="{% url 'exportar_excel' %}" class="d-inline">
+                <input type="hidden" name="exportar_excel" value="1">
+                {% for key, value in request.GET.items %}
+                    {% if key != 'exportar_excel' and key != 'page' %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endif %}
+                {% endfor %}
+                {% if is_superuser %}
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-file-excel me-1"></i> Exportar Excel
+                </button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{% url 'relatorios' %}">
+            <div class="row g-3">
+                <!-- Data Início -->
+                <div class="col-md-2">
+                    <label class="form-label">Data Início</label>
+                    <input type="date" class="form-control" name="data_inicio" 
+                            value="{{ filter_data.data_inicio }}">
+                </div>
+                
+                <!-- Data Fim -->
+                <div class="col-md-2">
+                    <label class="form-label">Data Fim</label>
+                    <input type="date" class="form-control" name="data_fim"
+                            value="{{ filter_data.data_fim }}">
+                </div>
+                
+                <!-- Projetista -->
+                <div class="col-md-2">
+                    <label class="form-label">Projetista</label>
+                    <select class="form-select" name="projetista">
+                        <option value="">Todos</option>
+                        {% for projetista in projetistas %}
+                        <option value="{{ projetista.id }}" 
+                                {% if filter_data.projetista|add:"0" == projetista.id %}selected{% endif %}>
+                            {{ projetista.get_full_name|default:projetista.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Status -->
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status">
+                        <option value="">Todos</option>
+                        {% for status_key, status_value in status_choices %}
+                        <option value="{{ status_key }}"
+                                {% if filter_data.status == status_key %}selected{% endif %}>
+                            {{ status_value }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Tipo de Projeto -->
+                <div class="col-md-2">
+                    <label class="form-label">Tipo de Projeto</label>
+                    <select class="form-select" name="tipo_projeto">
+                        <option value="">Todos</option>
+                        {% for tipo in tipos_projeto %}
+                        <option value="{{ tipo.id }}"
+                                {% if filter_data.tipo_projeto|add:"0" == tipo.id %}selected{% endif %}>
+                            {{ tipo.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Categoria -->
+                <div class="col-md-2">
+                    <label class="form-label">Categoria</label>
+                    <select class="form-select" name="categoria">
+                        <option value="">Todos</option>
+                        {% for categoria in categorias %}
+                        <option value="{{ categoria.id }}"
+                                {% if filter_data.categoria|add:"0" == categoria.id %}selected{% endif %}>
+                            {{ categoria.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Ordenação -->
+                <div class="col-md-3">
+                    <label class="form-label">Ordenação</label>
+                    <select class="form-select" name="ordenacao">
+                        <option value="-data" {% if filter_data.ordenacao == '-data' %}selected{% endif %}>Data (mais recente)</option>
+                        <option value="data" {% if filter_data.ordenacao == 'data' %}selected{% endif %}>Data (mais antiga)</option>
+                        <option value="projetista" {% if filter_data.ordenacao == 'projetista' %}selected{% endif %}>Projetista (A-Z)</option>
+                        <option value="-projetista" {% if filter_data.ordenacao == '-projetista' %}selected{% endif %}>Projetista (Z-A)</option>
+                        <option value="dc_id" {% if filter_data.ordenacao == 'dc_id' %}selected{% endif %}>DC/ID (A-Z)</option>
+                        <option value="-dc_id" {% if filter_data.ordenacao == '-dc_id' %}selected{% endif %}>DC/ID (Z-A)</option>
+                    </select>
+                </div>
+                
+                <!-- Itens por página -->
+                <div class="col-md-2">
+                    <label class="form-label">Itens por página</label>
+                    <select class="form-select" name="itens_por_pagina">
+                        <option value="10" {% if filter_data.itens_por_pagina == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if filter_data.itens_por_pagina == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if filter_data.itens_por_pagina == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if filter_data.itens_por_pagina == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                
+                <!-- Botões -->
+                <div class="col-md-12 mt-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i> Aplicar Filtros
+                        </button>
+                        <a href="{% url 'relatorios' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-eraser me-1"></i> Limpar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+ 

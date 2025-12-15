@@ -75,12 +75,31 @@
                         <tr class="projetista-row">
                             <td class="projetista-cell">
                                 <div class="d-flex align-items-center">
-                                    <div class="avatar-circle me-3">
-                                        {{ projetista.nome|first|upper }}
+                                    <div class="avatar-circle me-3 position-relative">
+                                        <!-- CORREÇÃO: Use 'foto' não 'foto_url' -->
+                                        {% if projetista.foto %}
+                                            <!-- TEM FOTO - mostra a imagem -->
+                                            <img src="{{ projetista.foto }}" 
+                                                alt="{{ projetista.nome }}" 
+                                                class="rounded-circle border" 
+                                                width="50" 
+                                                height="50"
+                                                style="object-fit: cover;">
+                                        {% else %}
+                                            <!-- NÃO TEM FOTO - mostra inicial com fundo colorido -->
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                                style="width: 50px; color: white; font-weight: bold;">
+                                                {{ projetista.nome|first|upper }}
+                                            </div>
+                                        {% endif %}
                                     </div>
                                     <div>
                                         <div class="fw-medium">{{ projetista.nome }}</div>
-                                        <small class="text-muted">{{ projetista.email }}</small>
+                                        <small class="text-muted" title="{{ projetista.email }}">
+                                            {{ projetista.email|truncatechars:30 }}
+                                        </small>
+                                        <!-- DEBUG: descomente para ver o valor da foto -->
+                                        <!-- <small class="text-muted d-block">Foto: {{ projetista.foto|default:"Nenhuma" }}</small> -->
                                     </div>
                                 </div>
                             </td>
@@ -124,6 +143,7 @@
                             </td>
                         </tr>
                         {% endfor %}
+                                            
                     </tbody>
                     
                     <!-- Totais por tipo -->

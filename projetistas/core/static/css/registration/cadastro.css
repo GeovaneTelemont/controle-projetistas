@@ -1,4 +1,11 @@
 
+body {
+    background: linear-gradient(to bottom, #9aa9ed, #3f37c9);
+    min-height: 100vh;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
 .register-container {
     background: white;
     border-radius: 15px;

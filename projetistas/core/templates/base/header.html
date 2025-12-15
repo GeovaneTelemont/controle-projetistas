@@ -97,7 +97,10 @@
                                     {% if user.profile.foto and user.profile.foto.url %}
                                         <img src="{{ user.profile.foto.url }}" 
                                                 alt="{{ user.username }}"
-                                                style="width: 100%; height: 100%; object-fit: cover;">
+                                                class="rounded-circle border" 
+                                                width="50" 
+                                                height="50"
+                                                style="object-fit: cover;">
                                         <span class="avatar-initials" style="display: none;">
                                             {{ user.get_full_name|default:user.username|first|upper }}
                                         </span>
@@ -115,7 +118,7 @@
                             <div class="d-none d-md-block">
                                 {% if user.is_authenticated %}
                                     <span class="fw-medium">{{ user.get_short_name|default:user.username }}</span>
-                                    <small class="d-block text-muted">{{ user.email|truncatechars:20 }}</small>
+                                    <small class="d-block text-muted">{{ user.email }}</small>
                                 {% else %}
                                     <span class="fw-medium">Visitante</span>
                                     <small class="d-block text-muted">Faça login</small>

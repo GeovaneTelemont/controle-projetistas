@@ -84,7 +84,7 @@ class Producao(models.Model):
     projetista = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name='Projetista')
     tipo_projeto = models.ForeignKey(TipoProjeto, on_delete=models.PROTECT, verbose_name='Tipo de Projeto')
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, verbose_name='Categoria')
-    dc_id = models.CharField('DC/ID', max_length=50)
+    dc_id = models.CharField('DC/ID', max_length=50, unique=False)
     metragem_cabo = models.DecimalField('Metragem de Cabo', max_digits=10, decimal_places=2, default=0.0)
     status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='PENDENTE')
     motivo_status = models.CharField('Motivo/Observação do Status', max_length=255, blank=True, help_text='Ex: Motivo da pendência, do cancelamento ou em que etapa está o andamento.')

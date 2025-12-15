@@ -2,7 +2,6 @@
 {% load static %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/registration/cadastro.css' %}">
-<link rel="stylesheet" href="{% static 'css/registration/login.css' %}">
 {% endblock %}
 {% block content %}
     <div class="container mt-4 mb-4">
@@ -93,7 +92,12 @@
                                 <label for="id_password1" class="form-label">
                                     <i class="fas fa-lock me-1"></i>Senha
                                 </label>
-                                {{ form.password1 }}
+                                <div class="input-group">
+                                    {{ form.password1 }}
+                                    <button class="btn btn-outline-secondary toggle-password" type="button" data-target="id_password1">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                                 {% if form.password1.errors %}
                                     <div class="text-danger error-list">
                                         {% for error in form.password1.errors %}
@@ -113,7 +117,12 @@
                                 <label for="id_password2" class="form-label">
                                     <i class="fas fa-lock me-1"></i>Confirmar Senha
                                 </label>
-                                {{ form.password2 }}
+                                <div class="input-group">
+                                    {{ form.password2 }}
+                                    <button class="btn btn-outline-secondary toggle-password" type="button" data-target="id_password2">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                                 {% if form.password2.errors %}
                                     <div class="text-danger error-list">
                                         {% for error in form.password2.errors %}
@@ -142,4 +151,77 @@
             </div>
         </div>
     </div>
+
+    <!-- Adicione este script para funcionalidade do olhinho -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Adiciona evento de clique a todos os botões de mostrar/ocultar senha
+        document.querySelectorAll('.toggle-password').forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const passwordInput = document.getElementById(targetId);
+                const icon = this.querySelector('i');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                    this.setAttribute('aria-label', 'Ocultar senha');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                    this.setAttribute('aria-label', 'Mostrar senha');
+                }
+            });
+        });
+        
+        // Adiciona suporte para tecla Enter/Space nos botões
+        document.querySelectorAll('.toggle-password').forEach(button => {
+            button.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.click();
+                }
+            });
+        });
+    });
+    </script>
+
+    <!-- Adicione este estilo para melhorar a aparência -->
+    <style>
+    .input-group {
+        position: relative;
+    }
+    
+    .toggle-password {
+        border-left: 0;
+        border-color: #ced4da;
+        background-color: #fff;
+    }
+    
+    .toggle-password:hover {
+        background-color: #f8f9fa;
+        border-color: #ced4da;
+    }
+    
+    .toggle-password:focus {
+        box-shadow: none;
+        border-color: #ced4da;
+    }
+    
+    /* Estilo para garantir que o input-group funcione corretamente */
+    .input-group .form-control {
+        border-right: 0;
+    }
+    
+    .input-group .form-control:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    .input-group .form-control:focus + .toggle-password {
+        border-color: #86b7fe;
+    }
+    </style>
 {% endblock %}
