@@ -383,7 +383,31 @@ def dashboard(request):
     if request.user.is_superuser:
         ver_todos = True
     
-    # Base query com filtro de data se existir
+    # ========== BASE QUERY PARA ESTATÍSTICAS (SEM FILTRO DE DATA) ==========
+    # Para estatísticas, sempre mostrar todos os projetos relevantes
+    if request.user.is_authenticated and not ver_todos:
+        stats_base_query = Producao.objects.filter(projetista=request.user)
+    else:
+        stats_base_query = Producao.objects.all()
+    
+    # Calcular estatísticas (SEMPRE sem filtro de data)
+    stats_query = stats_base_query.values('status').annotate(total=Count('id'))
+    
+    stats_dict = {
+        'PENDENTE': 0,
+        'EM_ANDAMENTO': 0,
+        'REVISAO': 0,
+        'CONCLUIDO': 0,
+        'CANCELADO': 0,
+        'total': 0
+    }
+    
+    for stat in stats_query:
+        stats_dict[stat['status']] = stat['total']
+        stats_dict['total'] += stat['total']
+
+    # ========== BASE QUERY PARA LISTAGEM (COM FILTRO DE DATA) ==========
+    # Aqui sim aplicamos filtro de data para a listagem de produções
     if data_filtro:
         try:
             data_filtro_obj = datetime.strptime(data_filtro, '%Y-%m-%d').date()
@@ -419,22 +443,7 @@ def dashboard(request):
             producoes = Producao.objects.all().order_by('-data')
             base_query = Producao.objects.all()
 
-    # Cálculo das estatísticas
-    stats_query = producoes.values('status').annotate(total=Count('id'))
-    
-    stats_dict = {
-        'PENDENTE': 0,
-        'EM_ANDAMENTO': 0,
-        'REVISAO': 0,
-        'CONCLUIDO': 0,
-        'CANCELADO': 0,
-        'total': 0
-    }
-    
-    for stat in stats_query:
-        stats_dict[stat['status']] = stat['total']
-        stats_dict['total'] += stat['total']
-
+    # Otimizar queries para a listagem
     producoes = producoes.select_related(
         'projetista', 'tipo_projeto', 'categoria'
     ).prefetch_related('historico')
@@ -443,7 +452,7 @@ def dashboard(request):
     # Buscar todos os tipos de projeto
     tipos_projeto = TipoProjeto.objects.all().order_by('nome')
     
-    # Buscar contagem por projetista e tipo
+    # Buscar contagem por projetista e tipo (usando base_query que já tem filtro de data)
     projetos_por_tipo = base_query.values(
         'projetista__id',
         'projetista__username',
@@ -472,7 +481,7 @@ def dashboard(request):
             
             # CORREÇÃO: Buscar o usuário CORRETO pelo ID, não usar o 'user' logado
             try:
-                usuario_correto = User.objects.get(id=projetista_id)  # ← MUDANÇA AQUI
+                usuario_correto = User.objects.get(id=projetista_id)
             except User.DoesNotExist:
                 continue  # Pula se o usuário não existir
             
@@ -489,9 +498,9 @@ def dashboard(request):
             projetistas_dict[projetista_id] = {
                 'id': projetista_id,
                 'username': item['projetista__username'],
-                'email': usuario_correto.email if usuario_correto else '',  # ← MUDANÇA AQUI
+                'email': usuario_correto.email if usuario_correto else '',
                 'nome': nome,
-                'foto': foto_url,  # ← MUDADO de 'foto_url' para 'foto'
+                'foto': foto_url,
                 'tipos': {},
                 'total': 0
             }
@@ -643,7 +652,7 @@ def dashboard(request):
 
     context = {
         'producoes': producoes,
-        'stats': stats_dict,
+        'stats': stats_dict,  # Agora usa stats_base_query (sem filtro de data)
         # Dados para a tabela
         'tipos_projeto': tipos_projeto,
         'projetistas_data': projetistas_data,

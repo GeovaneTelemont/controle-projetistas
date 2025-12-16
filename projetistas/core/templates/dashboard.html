@@ -14,12 +14,59 @@
 {% include 'components/dashboard/button_dash.html' %}
 {% include 'components/dashboard/tabela_por_projeto.html' %}
 {% include 'components/dashboard/dashboard_status.html' %}
-{% include 'components/dashboard/grafico_projetos.html' %}
+
+
+<!-- Seção de Analytics -->
+<div class="dashboard-analytics mt-4 mb-4">
+    <div class="row">
+        <!-- Componente do Gráfico -->
+        {% include 'components/dashboard/grafico_projetos.html' %}
+        {% include 'components/dashboard/ranking_projeto.html' %}   
+    </div>
+</div>
 {% include 'components/dashboard/todas_producoes.html' %}
 
 
 {% endblock %}
 
 {% block extra_js %}
+    <!-- Scripts principais e configuração -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Dados do Django passados via JSON
+    const djangoData = {{ analytics_data_json|safe }};
     
+    console.log('Dados recebidos do Django:', djangoData);
+    
+    // Inicializar componentes com dados
+    if (djangoData) {
+        // Passar dados para o componente de gráfico
+        if (djangoData.project_types && typeof window.updateChartData === 'function') {
+            window.updateChartData(djangoData.project_types);
+        }
+        
+        // Passar dados para o componente de ranking
+        if (djangoData.designers && typeof window.updateRankingData === 'function') {
+            window.updateRankingData(djangoData.designers);
+        }
+        
+        // Alternativa: definir dados globais para os componentes
+        // window.chartData = djangoData.project_types;
+        // window.rankingData = djangoData.designers;
+    }
+    
+    // Funções globais para atualização dinâmica
+    window.refreshAnalytics = function(newData) {
+        if (newData.project_types && typeof window.updateChartData === 'function') {
+            window.updateChartData(newData.project_types);
+        }
+        
+        if (newData.designers && typeof window.updateRankingData === 'function') {
+            window.updateRankingData(newData.designers);
+        }
+    };
+});
+</script>
 {% endblock %}
+

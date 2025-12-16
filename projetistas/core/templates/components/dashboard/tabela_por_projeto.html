@@ -1,6 +1,130 @@
 {% load static %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components/tabela_por_projeto.css' %}">
+<style>
+/* Estilos para a tabela com cabeçalho e rodapé fixos */
+.projects-table-container .table-wrapper {
+    position: relative;
+    height: 420px; /* Altura fixa para ~5-6 linhas */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Cabeçalho fixo - ajustado para não cobrir o primeiro dado */
+.table-fixed-header {
+    background: white;
+    z-index: 100;
+    border-bottom: 2px solid #e9ecef;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.table-fixed-header thead th {
+    padding: 12px 8px !important;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+    font-weight: 600;
+    border-bottom: 2px solid #4361ee !important;
+}
+
+/* Corpo da tabela com rolagem */
+.table-scrollable-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Rodapé fixo - ajustado para não cobrir o último dado */
+.table-fixed-footer {
+    background: white;
+    z-index: 90;
+    border-top: 2px solid #e9ecef;
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+}
+
+.table-fixed-footer tfoot th,
+.table-fixed-footer tfoot td {
+    padding: 12px 8px !important;
+    background: linear-gradient(135deg, #f8f9fa, #ffffff) !important;
+    font-weight: 600;
+    border-top: 2px solid #28a745 !important;
+}
+
+/* Estilização da barra de rolagem */
+.table-scrollable-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-scrollable-body::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.table-scrollable-body::-webkit-scrollbar-thumb {
+    background: #c1c9d0;
+    border-radius: 4px;
+}
+
+.table-scrollable-body::-webkit-scrollbar-thumb:hover {
+    background: #a8b0b9;
+}
+
+/* Linhas da tabela */
+.projetista-row {
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.projetista-row:hover {
+    background-color: rgba(67, 97, 238, 0.05) !important;
+}
+
+/* Indicador de rolagem */
+.scroll-indicator-table {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    animation: bounce 2s infinite;
+    z-index: 50;
+}
+
+.scroll-indicator-table.visible {
+    opacity: 1;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+    40% {transform: translateY(-5px);}
+    60% {transform: translateY(-3px);}
+}
+
+/* Gradiente para indicar mais conteúdo */
+.table-scrollable-body::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.9));
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .projects-table-container .table-wrapper {
+        height: 350px;
+    }
+}
+</style>
 {% endblock %}
 
 <div class="projects-table-container">
@@ -50,131 +174,163 @@
             {% endif %}
         </div>
         
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover projects-table">
-                    <thead>
-                        <tr class="table-light">
-                            <th class="projetista-header">
-                                <i class="fas fa-user me-1"></i>
-                                Projetista
-                            </th>
-                            {% for tipo in tipos_projeto %}
-                            <th class="tipo-header text-center">
-                                {{ tipo.nome }}
-                            </th>
-                            {% endfor %}
-                            <th class="total-header text-center">
-                                <i class="fas fa-chart-bar me-1"></i>
-                                Total
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for projetista in projetistas_data %}
-                        <tr class="projetista-row">
-                            <td class="projetista-cell">
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar-circle me-3 position-relative">
-                                        <!-- CORREÇÃO: Use 'foto' não 'foto_url' -->
-                                        {% if projetista.foto %}
-                                            <!-- TEM FOTO - mostra a imagem -->
-                                            <img src="{{ projetista.foto }}" 
-                                                alt="{{ projetista.nome }}" 
-                                                class="rounded-circle border" 
-                                                width="50" 
-                                                height="50"
-                                                style="object-fit: cover;">
-                                        {% else %}
-                                            <!-- NÃO TEM FOTO - mostra inicial com fundo colorido -->
-                                            <div class="rounded-circle d-flex align-items-center justify-content-center"
-                                                style="width: 50px; color: white; font-weight: bold;">
-                                                {{ projetista.nome|first|upper }}
+        <div class="card-body p-0">
+            <!-- Container principal da tabela -->
+            <div class="table-wrapper">
+                <!-- Cabeçalho fixo -->
+                <div class="table-fixed-header">
+                    <div class="table-responsive">
+                        <table class="table table-hover projects-table mb-0">
+                            <thead>
+                                <tr class="table-light">
+                                    <th class="projetista-header">
+                                        <i class="fas fa-user me-1"></i>
+                                        Projetista
+                                    </th>
+                                    {% for tipo in tipos_projeto %}
+                                    <th class="tipo-header text-center">
+                                        {{ tipo.nome }}
+                                    </th>
+                                    {% endfor %}
+                                    <th class="total-header text-center">
+                                        <i class="fas fa-chart-bar me-1"></i>
+                                        Total
+                                    </th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Corpo da tabela com rolagem -->
+                <div class="table-scrollable-body" id="tableScrollBody">
+                    <div class="table-responsive">
+                        <table class="table table-hover projects-table mb-0">
+                            <tbody id="projetistasTableBody">
+                                {% for projetista in projetistas_data %}
+                                <tr class="projetista-row">
+                                    <td class="projetista-cell">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-3 position-relative">
+                                                {% if projetista.foto %}
+                                                    <img src="{{ projetista.foto }}" 
+                                                        alt="{{ projetista.nome }}" 
+                                                        class="rounded-circle border" 
+                                                        width="50" 
+                                                        height="50"
+                                                        style="object-fit: cover;">
+                                                {% else %}
+                                                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                                        style="width: 50px; color: white; font-weight: bold;">
+                                                        {{ projetista.nome|first|upper }}
+                                                    </div>
+                                                {% endif %}
                                             </div>
-                                        {% endif %}
-                                    </div>
-                                    <div>
-                                        <div class="fw-medium">{{ projetista.nome }}</div>
-                                        <small class="text-muted" title="{{ projetista.email }}">
-                                            {{ projetista.email|truncatechars:30 }}
-                                        </small>
-                                        <!-- DEBUG: descomente para ver o valor da foto -->
-                                        <!-- <small class="text-muted d-block">Foto: {{ projetista.foto|default:"Nenhuma" }}</small> -->
-                                    </div>
-                                </div>
-                            </td>
-                            
-                            {% for tipo in tipos_projeto %}
-                            <td class="tipo-cell text-center">
-                                {% for key, value in projetista.tipos.items %}
-                                    {% if key == tipo.nome %}
-                                        {% if value > 0 %}
-                                        <span class="count-badge">
-                                            {{ value }}
-                                        </span>
-                                        {% else %}
+                                            <div>
+                                                <div class="fw-medium">{{ projetista.nome }}</div>
+                                                <small class="text-muted" title="{{ projetista.email }}">
+                                                    {{ projetista.email|truncatechars:30 }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    
+                                    {% for tipo in tipos_projeto %}
+                                    <td class="tipo-cell text-center">
+                                        {% for key, value in projetista.tipos.items %}
+                                            {% if key == tipo.nome %}
+                                                {% if value > 0 %}
+                                                <span class="count-badge">
+                                                    {{ value }}
+                                                </span>
+                                                {% else %}
+                                                <span class="text-muted">-</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if not tipo.nome in projetista.tipos %}
                                         <span class="text-muted">-</span>
                                         {% endif %}
-                                    {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                    
+                                    <td class="total-cell text-center">
+                                        <span class="total-badge">
+                                            {{ projetista.total }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="{{ tipos_projeto|length|add:2 }}" class="text-center py-4">
+                                        <i class="fas fa-database fa-2x text-muted mb-3"></i>
+                                        <p class="text-muted mb-0">
+                                            {% if request.GET.data_filtro %}
+                                                Nenhum dado encontrado para a data selecionada
+                                            {% else %}
+                                                Nenhum dado disponível
+                                            {% endif %}
+                                        </p>
+                                    </td>
+                                </tr>
                                 {% endfor %}
-                                {% if not tipo.nome in projetista.tipos %}
-                                <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            {% endfor %}
-                            
-                            <td class="total-cell text-center">
-                                <span class="total-badge">
-                                    {{ projetista.total }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="{{ tipos_projeto|length|add:2 }}" class="text-center py-4">
-                                <i class="fas fa-database fa-2x text-muted mb-3"></i>
-                                <p class="text-muted mb-0">
-                                    {% if request.GET.data_filtro %}
-                                        Nenhum dado encontrado para a data selecionada
-                                    {% else %}
-                                        Nenhum dado disponível
-                                    {% endif %}
-                                </p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                                            
-                    </tbody>
-                    
-                    <!-- Totais por tipo -->
-                    <tfoot>
-                        <tr class="table-light">
-                            <th class="total-footer">
-                                <i class="fas fa-calculator me-1"></i>
-                                Total por Tipo
-                            </th>
-                            {% for tipo in tipos_projeto %}
-                            <td class="text-center fw-bold">
-                                {% for key, value in totais_por_tipo.items %}
-                                    {% if key == tipo.nome %}
-                                        <span class="text-primary">{{ value }}</span>
-                                    {% endif %}
-                                {% endfor %}
-                                {% if not tipo.nome in totais_por_tipo %}
-                                    <span class="text-muted">0</span>
-                                {% endif %}
-                            </td>
-                            {% endfor %}
-                            <td class="text-center fw-bold">
-                                <span class="text-success">{{ total_geral }}</span>
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Rodapé fixo -->
+                <div class="table-fixed-footer">
+                    <div class="table-responsive">
+                        <table class="table table-hover projects-table mb-0">
+                            <tfoot>
+                                <tr class="table-light">
+                                    <th class="total-footer">
+                                        <i class="fas fa-calculator me-1"></i>
+                                        Total por Tipo
+                                    </th>
+                                    {% for tipo in tipos_projeto %}
+                                    <td class="text-center fw-bold">
+                                        {% for key, value in totais_por_tipo.items %}
+                                            {% if key == tipo.nome %}
+                                                <span class="text-primary">{{ value }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if not tipo.nome in totais_por_tipo %}
+                                            <span class="text-muted">0</span>
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                    <td class="text-center fw-bold">
+                                        <span class="text-success">{{ total_geral }}</span>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Indicador de rolagem -->
+                <div class="scroll-indicator-table text-center" id="tableScrollIndicator" style="display: none;">
+                    <small class="text-muted">
+                        <i class="fas fa-chevron-down me-1"></i>
+                        Role para ver mais projetistas
+                    </small>
+                </div>
             </div>
             
-            <!-- Estatísticas -->
-            <div class="stats-summary mt-4">
+            <!-- Contador de projetistas -->
+            <div class="projetistas-count px-3 py-2 border-top">
+                <small class="text-muted">
+                    <i class="fas fa-users me-1"></i>
+                    <span id="projetistasCount">{{ projetistas_data|length }}</span> projetista{{ projetistas_data|length|pluralize:"s" }}
+                </small>
+            </div>
+        </div>
+        
+        <!-- Estatísticas -->
+        <div class="card-footer bg-white border-top-0">
+            <div class="stats-summary">
                 <div class="row g-3">
                     <div class="col-md-3">
                         <div class="stat-card">
@@ -244,5 +400,148 @@
 </div>
 
 {% block extra_js %}
-<script src="{% static 'js/components/tabela_por_projeto.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos DOM
+    const tableScrollBody = document.getElementById('tableScrollBody');
+    const tableBody = document.getElementById('projetistasTableBody');
+    const scrollIndicator = document.getElementById('tableScrollIndicator');
+    const projetistasCount = document.getElementById('projetistasCount');
+    
+    // Configurar tabela
+    function setupTable() {
+        const projetistasRows = tableBody.querySelectorAll('.projetista-row');
+        const rowCount = projetistasRows.length;
+        
+        // Atualizar contador
+        projetistasCount.textContent = rowCount;
+        
+        // Verificar se há mais de 5 projetistas
+        if (rowCount > 5) {
+            // Mostrar indicador de rolagem
+            scrollIndicator.style.display = 'block';
+            setTimeout(() => {
+                scrollIndicator.classList.add('visible');
+            }, 100);
+            
+            // Configurar eventos de rolagem
+            setupScrollEvents();
+        } else {
+            // Desativar indicador
+            scrollIndicator.style.display = 'none';
+            scrollIndicator.classList.remove('visible');
+        }
+    }
+    
+    // Configurar eventos de rolagem
+    function setupScrollEvents() {
+        let scrollTimeout;
+        
+        tableScrollBody.addEventListener('scroll', function() {
+            const scrollTop = this.scrollTop;
+            const scrollHeight = this.scrollHeight;
+            const clientHeight = this.clientHeight;
+            const scrollBottom = scrollHeight - scrollTop - clientHeight;
+            
+            // Esconder indicador quando começar a rolar
+            if (scrollTop > 20 && scrollIndicator.classList.contains('visible')) {
+                scrollIndicator.classList.remove('visible');
+            }
+            
+            // Mostrar indicador quando perto do topo
+            if (scrollTop < 10 && scrollBottom > 20 && !scrollIndicator.classList.contains('visible')) {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    scrollIndicator.classList.add('visible');
+                }, 300);
+            }
+        });
+        
+        // Evento mouseenter/mouseleave para indicador
+        tableScrollBody.addEventListener('mouseenter', function() {
+            const scrollTop = this.scrollTop;
+            const scrollHeight = this.scrollHeight;
+            const clientHeight = this.clientHeight;
+            
+            if (scrollHeight > clientHeight && scrollTop < scrollHeight - clientHeight - 20) {
+                setTimeout(() => {
+                    scrollIndicator.classList.add('visible');
+                }, 300);
+            }
+        });
+        
+        tableScrollBody.addEventListener('mouseleave', function() {
+            setTimeout(() => {
+                scrollIndicator.classList.remove('visible');
+            }, 500);
+        });
+    }
+    
+    // Inicializar tabela
+    setupTable();
+    
+    // Reconfigurar ao redimensionar
+    window.addEventListener('resize', setupTable);
+    
+    // Botão para expandir/colapsar (opcional)
+    function addExpandButton() {
+        const projetistasRows = tableBody.querySelectorAll('.projetista-row');
+        
+        if (projetistasRows.length > 5) {
+            if (!document.getElementById('toggleTableHeight')) {
+                const toggleBtn = document.createElement('button');
+                toggleBtn.id = 'toggleTableHeight';
+                toggleBtn.className = 'btn btn-sm btn-outline-secondary mt-2';
+                toggleBtn.innerHTML = '<i class="fas fa-expand-alt me-1"></i> Mostrar todos';
+                
+                toggleBtn.addEventListener('click', function() {
+                    const tableWrapper = document.querySelector('.table-wrapper');
+                    const isExpanded = tableWrapper.style.height === 'none';
+                    
+                    if (isExpanded) {
+                        // Colapsar
+                        tableWrapper.style.height = '420px';
+                        toggleBtn.innerHTML = '<i class="fas fa-expand-alt me-1"></i> Mostrar todos';
+                        toggleBtn.classList.remove('btn-primary');
+                        toggleBtn.classList.add('btn-outline-secondary');
+                        
+                        // Reativar rolagem
+                        scrollIndicator.style.display = 'block';
+                        setTimeout(() => {
+                            setupTable();
+                        }, 100);
+                    } else {
+                        // Expandir
+                        tableWrapper.style.height = 'none';
+                        toggleBtn.innerHTML = '<i class="fas fa-compress-alt me-1"></i> Mostrar menos';
+                        toggleBtn.classList.remove('btn-outline-secondary');
+                        toggleBtn.classList.add('btn-primary');
+                        
+                        // Esconder indicador
+                        scrollIndicator.style.display = 'none';
+                        scrollIndicator.classList.remove('visible');
+                    }
+                });
+                
+                // Inserir antes das estatísticas
+                const statsSummary = document.querySelector('.stats-summary');
+                if (statsSummary) {
+                    statsSummary.parentNode.insertBefore(toggleBtn, statsSummary);
+                }
+            }
+        }
+    }
+    
+    // Adicionar botão de expandir (opcional)
+    // addExpandButton();
+    
+    // Configurar filtro de data
+    const filterDate = document.getElementById('filterDate');
+    if (filterDate) {
+        // Definir data máxima como hoje
+        const today = new Date().toISOString().split('T')[0];
+        filterDate.max = today;
+    }
+});
+</script>
 {% endblock %}
