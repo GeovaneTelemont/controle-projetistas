@@ -19,9 +19,9 @@
                     <i class="fas fa-plus-circle me-2"></i>Inserir Novo Projeto
                 </button>
                 {% if producoes_concluidas|add:producoes_canceladas > 0 %}
-                <a href="#inativos" class="btn btn-outline-light btn-sm" data-bs-toggle="tab">
+                <!-- <a href="#inativos" class="btn btn-outline-light btn-sm" data-bs-toggle="tab">
                     <i class="fas fa-archive me-2"></i>Ver Todos Inativos
-                </a>
+                </a> -->
                 {% endif %}
             </div>
         </div>
@@ -206,7 +206,6 @@
                         </tr>
                         
                         <!-- ========== MODAIS PARA EDIÇÃO INDIVIDUAL ========== -->
-                        <!-- (Todos os modais de edição permanecem iguais) -->
                         <!-- Modal para editar DC/ID -->
                         <div class="modal fade" id="editarDCIDModal{{ producao.id }}" tabindex="-1">
                             <div class="modal-dialog modal-sm">
@@ -347,11 +346,11 @@
                             </div>
                         </div>
                         
-                        <!-- Modal para editar Status -->
+                        <!-- Modal para editar Status (COM NOVA FUNCIONALIDADE) -->
                         <div class="modal fade" id="editarStatusModal{{ producao.id }}" tabindex="-1">
                             <div class="modal-dialog modal-sm">
                                 <div class="modal-content">
-                                    <form method="post" action="{% url 'producao' %}">
+                                    <form method="post" action="{% url 'producao' %}" id="formStatus{{ producao.id }}">
                                         {% csrf_token %}
                                         <input type="hidden" name="producao_id" value="{{ producao.id }}">
                                         
@@ -364,7 +363,9 @@
                                         <div class="modal-body">
                                             <div class="mb-3">
                                                 <label class="form-label">Novo Status</label>
-                                                <select name="status" class="form-select" required>
+                                                <select name="status" class="form-select" 
+                                                        id="statusSelect{{ producao.id }}" 
+                                                        onchange="validarMotivoStatus('{{ producao.id }}')" required>
                                                     {% for status_value, status_label in status_choices %}
                                                         <option value="{{ status_value }}" 
                                                                 {% if producao.status == status_value %}selected{% endif %}>
@@ -374,14 +375,31 @@
                                                 </select>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Motivo da Alteração</label>
-                                                <textarea name="motivo_status" class="form-control" rows="2" 
-                                                          placeholder="Descreva o motivo...">{{ producao.motivo_status|default:'' }}</textarea>
+                                                <label class="form-label">Motivo da Alteração 
+                                                    <span id="motivoObrigatorio{{ producao.id }}" class="text-danger" style="display: none;">*</span>
+                                                    <span id="contadorCaracteres{{ producao.id }}" class="badge bg-light text-dark float-end" style="display: none; font-size: 0.7em;">0/20</span>
+                                                </label>
+                                                <textarea name="motivo_status" 
+                                                          class="form-control" 
+                                                          rows="3" 
+                                                          id="motivoStatus{{ producao.id }}"
+                                                          placeholder="Descreva o motivo da alteração (mínimo 20 caracteres para status Pendente ou Cancelado)..."
+                                                          oninput="validarMotivoStatus('{{ producao.id }}')">{{ producao.motivo_status|default:'' }}</textarea>
+                                                <div class="form-text" id="motivoHelp{{ producao.id }}">
+                                                    Descreva o motivo da alteração de status
+                                                </div>
+                                                <div class="invalid-feedback" id="motivoFeedback{{ producao.id }}" style="display: none;">
+                                                    Para status Cancelado ou Pendente, o motivo deve ter pelo menos 20 caracteres
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                            <button type="submit" name="editar_status" class="btn btn-sm btn-primary">
+                                            <button type="submit" 
+                                                    name="editar_status" 
+                                                    class="btn btn-sm btn-primary"
+                                                    id="btnSalvarStatus{{ producao.id }}"
+                                                    {% if producao.status == "CANCELADO" or producao.status == "PENDENTE" and not producao.motivo_status %}disabled{% endif %}>
                                                 <i class="fas fa-save me-1"></i>Salvar
                                             </button>
                                         </div>
@@ -391,7 +409,6 @@
                         </div>
                         
                         <!-- ========== MODAIS DE AÇÕES ========== -->
-                        <!-- (Todos os modais de ações permanecem iguais) -->
                         <!-- Modal para Edição Completa -->
                         <div class="modal fade" id="editarCompletoModal{{ producao.id }}" tabindex="-1">
                             <div class="modal-dialog">
@@ -405,293 +422,293 @@
                                                 <i class="fas fa-edit me-2"></i>Edição Completa
                                             </h5>
                                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="mb-3">
-                                            <label class="form-label">DC/ID</label>
-                                            <input type="text" name="dc_id" class="form-control" 
-                                                   value="{{ producao.dc_id }}" required>
                                         </div>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">Tipo</label>
-                                                <select name="tipo_projeto" class="form-select" required>
-                                                    {% for tipo in tipos_projeto %}
-                                                        <option value="{{ tipo.id }}" 
-                                                                {% if producao.tipo_projeto.id == tipo.id %}selected{% endif %}>
-                                                            {{ tipo.nome }}
-                                                        </option>
-                                                    {% endfor %}
-                                                </select>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">DC/ID</label>
+                                                <input type="text" name="dc_id" class="form-control" 
+                                                       value="{{ producao.dc_id }}" required>
                                             </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">Categoria</label>
-                                                <select name="categoria" class="form-select" required>
-                                                    {% for cat in categorias %}
-                                                        <option value="{{ cat.id }}" 
-                                                                {% if producao.categoria.id == cat.id %}selected{% endif %}>
-                                                            {{ cat.nome }}
-                                                        </option>
-                                                    {% endfor %}
-                                                </select>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Tipo</label>
+                                                    <select name="tipo_projeto" class="form-select" required>
+                                                        {% for tipo in tipos_projeto %}
+                                                            <option value="{{ tipo.id }}" 
+                                                                    {% if producao.tipo_projeto.id == tipo.id %}selected{% endif %}>
+                                                                {{ tipo.nome }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Categoria</label>
+                                                    <select name="categoria" class="form-select" required>
+                                                        {% for cat in categorias %}
+                                                            <option value="{{ cat.id }}" 
+                                                                    {% if producao.categoria.id == cat.id %}selected{% endif %}>
+                                                                {{ cat.nome }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Metragem (m)</label>
+                                                    <input type="number" name="metragem_cabo" class="form-control" 
+                                                           step="0.01" min="0" value="{{ producao.metragem_cabo|default:'0.00' }}">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Status</label>
+                                                    <select name="status" class="form-select" required>
+                                                        {% for status_value, status_label in status_choices %}
+                                                            <option value="{{ status_value }}" 
+                                                                    {% if producao.status == status_value %}selected{% endif %}>
+                                                                {{ status_label }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Observações</label>
+                                                <textarea name="observacoes" class="form-control" rows="3">{{ producao.observacoes|default:'' }}</textarea>
                                             </div>
                                         </div>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">Metragem (m)</label>
-                                                <input type="number" name="metragem_cabo" class="form-control" 
-                                                       step="0.01" min="0" value="{{ producao.metragem_cabo|default:'0.00' }}">
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">Status</label>
-                                                <select name="status" class="form-select" required>
-                                                    {% for status_value, status_label in status_choices %}
-                                                        <option value="{{ status_value }}" 
-                                                                {% if producao.status == status_value %}selected{% endif %}>
-                                                            {{ status_label }}
-                                                        </option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" name="editar_completo" class="btn btn-primary">
+                                                <i class="fas fa-save me-2"></i>Salvar
+                                            </button>
                                         </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Observações</label>
-                                            <textarea name="observacoes" class="form-control" rows="3">{{ producao.observacoes|default:'' }}</textarea>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" name="editar_completo" class="btn btn-primary">
-                                            <i class="fas fa-save me-2"></i>Salvar
-                                        </button>
-                                    </div>
-                                </form>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Modal para Inativar (Marcar como Inativo) -->
-                    <div class="modal fade" id="inativarModal{{ producao.id }}" tabindex="-1">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header bg-warning text-dark">
-                                    <h5 class="modal-title">
-                                        <i class="fas fa-check-circle me-2"></i>Marcar como Inativo
-                                    </h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <form method="post" action="{% url 'producao' %}" id="formInativar{{ producao.id }}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="producao_id" value="{{ producao.id }}">
-                                    
-                                    <div class="modal-body">
-                                        <div class="alert alert-warning">
-                                            <i class="fas fa-exclamation-triangle me-2"></i>
-                                            <strong>Atenção!</strong> Esta ação marcará o projeto como inativo (Concluído ou Cancelado).
-                                        </div>
-                                        <p>Selecione o status:</p>
-                                        
-                                        <div class="mb-3">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="status_inativar" 
-                                                       id="cancelado{{ producao.id }}" value="CANCELADO">
-                                                <label class="form-check-label" for="cancelado{{ producao.id }}">
-                                                    <span class="badge status-cancelado">Cancelado</span> - Projeto foi cancelado
-                                                </label>
-                                            </div>
-                                            <div class="form-check mt-2">
-                                                <input class="form-check-input" type="radio" name="status_inativar" 
-                                                       id="concluido{{ producao.id }}" value="CONCLUIDO" checked>
-                                                <label class="form-check-label" for="concluido{{ producao.id }}">
-                                                    <span class="badge status-concluido">Concluído</span> - Projeto foi finalizado
-                                                </label>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label">Motivo</label>
-                                            <textarea name="motivo_inativar" class="form-control" rows="3" 
-                                                      placeholder="Descreva o motivo da conclusão/cancelamento..." required></textarea>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" name="inativar_producao" class="btn btn-warning">
+                        
+                        <!-- Modal para Inativar (Marcar como Inativo) -->
+                        <div class="modal fade" id="inativarModal{{ producao.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-warning text-dark">
+                                        <h5 class="modal-title">
                                             <i class="fas fa-check-circle me-2"></i>Marcar como Inativo
-                                        </button>
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
-                                </form>
+                                    <form method="post" action="{% url 'producao' %}" id="formInativar{{ producao.id }}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                        
+                                        <div class="modal-body">
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                <strong>Atenção!</strong> Esta ação marcará o projeto como inativo (Concluído ou Cancelado).
+                                            </div>
+                                            <p>Selecione o status:</p>
+                                            
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="status_inativar" 
+                                                           id="cancelado{{ producao.id }}" value="CANCELADO">
+                                                    <label class="form-check-label" for="cancelado{{ producao.id }}">
+                                                        <span class="badge status-cancelado">Cancelado</span> - Projeto foi cancelado
+                                                    </label>
+                                                </div>
+                                                <div class="form-check mt-2">
+                                                    <input class="form-check-input" type="radio" name="status_inativar" 
+                                                           id="concluido{{ producao.id }}" value="CONCLUIDO" checked>
+                                                    <label class="form-check-label" for="concluido{{ producao.id }}">
+                                                        <span class="badge status-concluido">Concluído</span> - Projeto foi finalizado
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Motivo</label>
+                                                <textarea name="motivo_inativar" class="form-control" rows="3" 
+                                                          placeholder="Descreva o motivo da conclusão/cancelamento..." required></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" name="inativar_producao" class="btn btn-warning">
+                                                <i class="fas fa-check-circle me-2"></i>Marcar como Inativo
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Modal para Reativar -->
-                    <div class="modal fade" id="reativarModal{{ producao.id }}" tabindex="-1">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header bg-success text-white">
-                                    <h5 class="modal-title">
-                                        <i class="fas fa-redo me-2"></i>Reativar Projeto
-                                    </h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                </div>
-                                <form method="post" action="{% url 'producao' %}" id="formReativar{{ producao.id }}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="producao_id" value="{{ producao.id }}">
-                                    
-                                    <div class="modal-body">
-                                        <div class="alert alert-info">
-                                            <i class="fas fa-info-circle me-2"></i>
-                                            Esta ação reativará o projeto para status ativo (Pendente, Em Andamento ou Revisão).
-                                        </div>
-                                        <p>Selecione o novo status:</p>
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label">Novo Status (Ativo)</label>
-                                            <select name="status_reativar" class="form-select" required>
-                                                <option value="PENDENTE">Pendente</option>
-                                                <option value="EM_ANDAMENTO" selected>Em Andamento</option>
-                                                <option value="REVISAO">Revisão</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label">Motivo da Reativação</label>
-                                            <textarea name="motivo_reativar" class="form-control" rows="3" 
-                                                      placeholder="Descreva o motivo para reativação..." required></textarea>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" name="reativar_producao" class="btn btn-success">
+                        
+                        <!-- Modal para Reativar -->
+                        <div class="modal fade" id="reativarModal{{ producao.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title">
                                             <i class="fas fa-redo me-2"></i>Reativar Projeto
-                                        </button>
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                     </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Modal para Excluir Projeto Permanentemente -->
-                    <div class="modal fade" id="excluirModal{{ producao.id }}" tabindex="-1">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header bg-danger text-white">
-                                    <h5 class="modal-title">
-                                        <i class="fas fa-trash me-2"></i>Excluir Projeto
-                                    </h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    <form method="post" action="{% url 'producao' %}" id="formReativar{{ producao.id }}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                        
+                                        <div class="modal-body">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                Esta ação reativará o projeto para status ativo (Pendente, Em Andamento ou Revisão).
+                                            </div>
+                                            <p>Selecione o novo status:</p>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Novo Status (Ativo)</label>
+                                                <select name="status_reativar" class="form-select" required>
+                                                    <option value="PENDENTE">Pendente</option>
+                                                    <option value="EM_ANDAMENTO" selected>Em Andamento</option>
+                                                    <option value="REVISAO">Revisão</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Motivo da Reativação</label>
+                                                <textarea name="motivo_reativar" class="form-control" rows="3" 
+                                                          placeholder="Descreva o motivo para reativação..." required></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" name="reativar_producao" class="btn btn-success">
+                                                <i class="fas fa-redo me-2"></i>Reativar Projeto
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
-                                <form method="post" action="{% url 'producao' %}" id="formExcluir{{ producao.id }}" onsubmit="return validarExclusaoFinal('{{ producao.dc_id }}', '{{ producao.id }}')">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="producao_id" value="{{ producao.id }}">
-                                    
-                                    <div class="modal-body">
-                                        <div class="alert alert-danger">
-                                            <i class="fas fa-exclamation-triangle me-2"></i>
-                                            <strong>ATENÇÃO: AÇÃO IRREVERSÍVEL!</strong><br>
-                                            Esta ação excluirá PERMANENTEMENTE o projeto e todos os seus dados históricos.
-                                            Não será possível recuperar os dados após a exclusão.
-                                        </div>
-                                        
-                                        <div class="card mb-3 border-danger">
-                                            <div class="card-body">
-                                                <h6 class="card-title">{{ producao.dc_id }}</h6>
-                                                <p class="card-text mb-1">
-                                                    <small>
-                                                        <strong>Tipo:</strong> {{ producao.tipo_projeto.nome }}<br>
-                                                        <strong>Categoria:</strong> {{ producao.categoria.nome }}<br>
-                                                        <strong>Status:</strong> 
-                                                        {% if producao.status == 'CANCELADO' %}
-                                                        <span class="badge status-cancelado">Cancelado</span>
-                                                        {% elif producao.status == 'CONCLUIDO' %}
-                                                        <span class="badge status-concluido">Concluído</span>
-                                                        {% else %}
-                                                        <span class="badge bg-secondary">{{ producao.status }}</span>
-                                                        {% endif %}
-                                                        <br>
-                                                        <strong>Início:</strong> {{ producao.data|date:"d/m/Y" }}
-                                                    </small>
-                                                </p>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label">Confirme o DC/ID para exclusão</label>
-                                            <input type="text" name="confirmar_dc_id" id="confirmarDCID{{ producao.id }}" 
-                                                   class="form-control" 
-                                                   placeholder="Digite o DC/ID para confirmar" required
-                                                   oninput="validarExclusaoDinamica('{{ producao.dc_id }}', '{{ producao.id }}')">
-                                            <div class="form-text">Digite exatamente: <strong id="dcIdTexto{{ producao.id }}">{{ producao.dc_id }}</strong></div>
-                                            <div id="feedbackDCID{{ producao.id }}" class="invalid-feedback" style="display: none;">
-                                                O DC/ID digitado não confere com o projeto!
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label">Motivo da Exclusão</label>
-                                            <textarea name="motivo_exclusao" id="motivoExclusao{{ producao.id }}" 
-                                                      class="form-control" rows="3" 
-                                                      placeholder="Descreva o motivo para exclusão permanente..." 
-                                                      required
-                                                      oninput="validarExclusaoDinamica('{{ producao.dc_id }}', '{{ producao.id }}')"></textarea>
-                                            <div id="feedbackMotivo{{ producao.id }}" class="invalid-feedback" style="display: none;">
-                                                Por favor, descreva o motivo da exclusão.
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="confirmar_exclusao" 
-                                                   id="confirmarExclusao{{ producao.id }}" 
-                                                   onchange="validarExclusaoDinamica('{{ producao.dc_id }}', '{{ producao.id }}')">
-                                            <label class="form-check-label text-danger" for="confirmarExclusao{{ producao.id }}">
-                                                <i class="fas fa-exclamation-circle me-1"></i>
-                                                Confirmo que compreendo que esta ação é irreversível e desejo excluir permanentemente este projeto.
-                                            </label>
-                                            <div id="feedbackCheckbox{{ producao.id }}" class="invalid-feedback" style="display: none;">
-                                                Você deve confirmar que compreende que esta ação é irreversível.
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" name="excluir_producao" class="btn btn-danger" 
-                                                id="btnExcluir{{ producao.id }}" disabled>
-                                            <i class="fas fa-trash me-2"></i>Excluir Permanentemente
-                                        </button>
-                                    </div>
-                                </form>
                             </div>
                         </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                <tr id="semResultados" style="display: none;">
-                    <td colspan="7" class="text-center py-4">
-                        <div class="mb-3">
-                            <i class="fas fa-search fa-3x text-muted opacity-25"></i>
+                        
+                        <!-- Modal para Excluir Projeto Permanentemente -->
+                        <div class="modal fade" id="excluirModal{{ producao.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title">
+                                            <i class="fas fa-trash me-2"></i>Excluir Projeto
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="post" action="{% url 'producao' %}" id="formExcluir{{ producao.id }}" onsubmit="return validarExclusaoFinal('{{ producao.dc_id }}', '{{ producao.id }}')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="producao_id" value="{{ producao.id }}">
+                                        
+                                        <div class="modal-body">
+                                            <div class="alert alert-danger">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                <strong>ATENÇÃO: AÇÃO IRREVERSÍVEL!</strong><br>
+                                                Esta ação excluirá PERMANENTEMENTE o projeto e todos os seus dados históricos.
+                                                Não será possível recuperar os dados após a exclusão.
+                                            </div>
+                                            
+                                            <div class="card mb-3 border-danger">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">{{ producao.dc_id }}</h6>
+                                                    <p class="card-text mb-1">
+                                                        <small>
+                                                            <strong>Tipo:</strong> {{ producao.tipo_projeto.nome }}<br>
+                                                            <strong>Categoria:</strong> {{ producao.categoria.nome }}<br>
+                                                            <strong>Status:</strong> 
+                                                            {% if producao.status == 'CANCELADO' %}
+                                                            <span class="badge status-cancelado">Cancelado</span>
+                                                            {% elif producao.status == 'CONCLUIDO' %}
+                                                            <span class="badge status-concluido">Concluído</span>
+                                                            {% else %}
+                                                            <span class="badge bg-secondary">{{ producao.status }}</span>
+                                                            {% endif %}
+                                                            <br>
+                                                            <strong>Início:</strong> {{ producao.data|date:"d/m/Y" }}
+                                                        </small>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Confirme o DC/ID para exclusão</label>
+                                                <input type="text" name="confirmar_dc_id" id="confirmarDCID{{ producao.id }}" 
+                                                       class="form-control" 
+                                                       placeholder="Digite o DC/ID para confirmar" required
+                                                       oninput="validarExclusaoDinamica('{{ producao.dc_id }}', '{{ producao.id }}')">
+                                                <div class="form-text">Digite exatamente: <strong id="dcIdTexto{{ producao.id }}">{{ producao.dc_id }}</strong></div>
+                                                <div id="feedbackDCID{{ producao.id }}" class="invalid-feedback" style="display: none;">
+                                                    O DC/ID digitado não confere com o projeto!
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Motivo da Exclusão</label>
+                                                <textarea name="motivo_exclusao" id="motivoExclusao{{ producao.id }}" 
+                                                          class="form-control" rows="3" 
+                                                          placeholder="Descreva o motivo para exclusão permanente..." 
+                                                          required
+                                                          oninput="validarExclusaoDinamica('{{ producao.dc_id }}', '{{ producao.id }}')"></textarea>
+                                                <div id="feedbackMotivo{{ producao.id }}" class="invalid-feedback" style="display: none;">
+                                                    Por favor, descreva o motivo da exclusão.
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="confirmar_exclusao" 
+                                                       id="confirmarExclusao{{ producao.id }}" 
+                                                       onchange="validarExclusaoDinamica('{{ producao.dc_id }}', '{{ producao.id }}')">
+                                                <label class="form-check-label text-danger" for="confirmarExclusao{{ producao.id }}">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                                    Confirmo que compreendo que esta ação é irreversível e desejo excluir permanentemente este projeto.
+                                                </label>
+                                                <div id="feedbackCheckbox{{ producao.id }}" class="invalid-feedback" style="display: none;">
+                                                    Você deve confirmar que compreende que esta ação é irreversível.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" name="excluir_producao" class="btn btn-danger" 
+                                                    id="btnExcluir{{ producao.id }}" disabled>
+                                                <i class="fas fa-trash me-2"></i>Excluir Permanentemente
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
-                        <h5 class="text-muted mb-2">Nenhum resultado encontrado</h5>
-                        <p class="text-muted mb-4">Nenhum projeto corresponde aos critérios de pesquisa.</p>
-                        <button type="button" class="btn btn-outline-primary" onclick="limparFiltros()">
-                            <i class="fas fa-times me-2"></i>Limpar Filtros
-                        </button>
-                    </td>
-                </tr>
-                
-                <tr id="nenhumaProducao">
-                    <td colspan="7" class="text-center py-4">
-                        <div class="mb-3">
-                            <i class="fas fa-inbox fa-3x text-muted opacity-25"></i>
-                        </div>
-                        <h5 class="text-muted mb-2">Nenhuma produção encontrada</h5>
-                        <p class="text-muted mb-4">Você ainda não possui produções cadastradas.</p>
-                        <button type="button" class="btn btn-primary" onclick="abrirModalNovoProjeto()">
-                            <i class="fas fa-plus me-2"></i>Adicionar Primeira Produção
-                        </button>
-                    </td>
-                </tr>
-                {% endif %}
+                        {% endfor %}
+                    {% else %}
+                    <tr id="semResultados" style="display: none;">
+                        <td colspan="7" class="text-center py-4">
+                            <div class="mb-3">
+                                <i class="fas fa-search fa-3x text-muted opacity-25"></i>
+                            </div>
+                            <h5 class="text-muted mb-2">Nenhum resultado encontrado</h5>
+                            <p class="text-muted mb-4">Nenhum projeto corresponde aos critérios de pesquisa.</p>
+                            <button type="button" class="btn btn-outline-primary" onclick="limparFiltros()">
+                                <i class="fas fa-times me-2"></i>Limpar Filtros
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <tr id="nenhumaProducao">
+                        <td colspan="7" class="text-center py-4">
+                            <div class="mb-3">
+                                <i class="fas fa-inbox fa-3x text-muted opacity-25"></i>
+                            </div>
+                            <h5 class="text-muted mb-2">Nenhuma produção encontrada</h5>
+                            <p class="text-muted mb-4">Você ainda não possui produções cadastradas.</p>
+                            <button type="button" class="btn btn-primary" onclick="abrirModalNovoProjeto()">
+                                <i class="fas fa-plus me-2"></i>Adicionar Primeira Produção
+                            </button>
+                        </td>
+                    </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
@@ -1070,6 +1087,158 @@ function validarExclusaoFinal(dcIdCorreto, producaoId) {
     return valido;
 }
 
+// ========== NOVAS FUNÇÕES PARA VALIDAÇÃO DO MOTIVO DE STATUS ==========
+
+// Função para validar motivo de status e controlar botão
+function validarMotivoStatus(producaoId) {
+    const statusSelect = document.getElementById('statusSelect' + producaoId);
+    const motivoTextarea = document.getElementById('motivoStatus' + producaoId);
+    const motivoObrigatorio = document.getElementById('motivoObrigatorio' + producaoId);
+    const contadorCaracteres = document.getElementById('contadorCaracteres' + producaoId);
+    const motivoFeedback = document.getElementById('motivoFeedback' + producaoId);
+    const motivoHelp = document.getElementById('motivoHelp' + producaoId);
+    const btnSalvar = document.getElementById('btnSalvarStatus' + producaoId);
+    
+    if (!statusSelect || !motivoTextarea || !btnSalvar) return;
+    
+    const status = statusSelect.value;
+    const motivo = motivoTextarea.value.trim();
+    const contagemCaracteres = motivo.length;
+    
+    // Status que exigem motivo obrigatório
+    const statusObrigatorios = ['CANCELADO', 'PENDENTE'];
+    const exigeMotivo = statusObrigatorios.includes(status);
+    const minimoCaracteres = 20;
+    
+    if (exigeMotivo) {
+        // Mostrar indicação de obrigatório
+        if (motivoObrigatorio) motivoObrigatorio.style.display = 'inline';
+        
+        // Mostrar contador de caracteres
+        if (contadorCaracteres) {
+            contadorCaracteres.style.display = 'inline-block';
+            contadorCaracteres.textContent = contagemCaracteres + '/' + minimoCaracteres;
+            
+            // Atualizar cor do contador
+            if (contagemCaracteres >= minimoCaracteres) {
+                contadorCaracteres.classList.remove('bg-light', 'text-dark');
+                contadorCaracteres.classList.add('bg-success', 'text-white');
+            } else {
+                contadorCaracteres.classList.remove('bg-success', 'text-white');
+                contadorCaracteres.classList.add('bg-light', 'text-dark');
+            }
+        }
+        
+        // Atualizar texto de ajuda
+        if (motivoHelp) {
+            motivoHelp.innerHTML = `Este status <strong>exige</strong> o preenchimento do motivo com pelo menos ${minimoCaracteres} caracteres`;
+            motivoHelp.className = 'form-text text-danger';
+        }
+        
+        // Validar se motivo tem mínimo de caracteres
+        if (contagemCaracteres < minimoCaracteres) {
+            motivoTextarea.classList.add('is-invalid');
+            motivoTextarea.classList.remove('is-valid');
+            if (motivoFeedback) motivoFeedback.style.display = 'block';
+            btnSalvar.disabled = true;
+            btnSalvar.classList.add('disabled');
+            return false;
+        } else {
+            motivoTextarea.classList.remove('is-invalid');
+            motivoTextarea.classList.add('is-valid');
+            if (motivoFeedback) motivoFeedback.style.display = 'none';
+            btnSalvar.disabled = false;
+            btnSalvar.classList.remove('disabled');
+            return true;
+        }
+    } else {
+        // Para outros status, motivo é opcional
+        if (motivoObrigatorio) motivoObrigatorio.style.display = 'none';
+        
+        // Esconder contador de caracteres
+        if (contadorCaracteres) contadorCaracteres.style.display = 'none';
+        
+        // Restaurar texto de ajuda padrão
+        if (motivoHelp) {
+            motivoHelp.innerHTML = 'Descreva o motivo da alteração de status (opcional)';
+            motivoHelp.className = 'form-text';
+        }
+        
+        // Limpar validação
+        motivoTextarea.classList.remove('is-invalid', 'is-valid');
+        if (motivoFeedback) motivoFeedback.style.display = 'none';
+        
+        // Botão sempre habilitado para outros status
+        btnSalvar.disabled = false;
+        btnSalvar.classList.remove('disabled');
+        
+        // Se for CONCLUÍDO e motivo estiver em branco, limpar o campo
+        if (status === 'CONCLUIDO' && motivo === '') {
+            motivoTextarea.value = '';
+        }
+        
+        return true;
+    }
+}
+
+// Função para configurar modal de status
+function configurarModalStatus(producaoId) {
+    const modal = document.getElementById('editarStatusModal' + producaoId);
+    if (modal) {
+        modal.addEventListener('shown.bs.modal', function() {
+            // Validar imediatamente quando o modal abrir
+            setTimeout(() => {
+                validarMotivoStatus(producaoId);
+            }, 100);
+        });
+        
+        // Limpar validação quando modal for fechado
+        modal.addEventListener('hidden.bs.modal', function() {
+            const motivoTextarea = document.getElementById('motivoStatus' + producaoId);
+            const motivoFeedback = document.getElementById('motivoFeedback' + producaoId);
+            const motivoHelp = document.getElementById('motivoHelp' + producaoId);
+            const motivoObrigatorio = document.getElementById('motivoObrigatorio' + producaoId);
+            const contadorCaracteres = document.getElementById('contadorCaracteres' + producaoId);
+            const btnSalvar = document.getElementById('btnSalvarStatus' + producaoId);
+            
+            if (motivoTextarea) {
+                motivoTextarea.classList.remove('is-invalid', 'is-valid');
+            }
+            if (motivoFeedback) motivoFeedback.style.display = 'none';
+            if (motivoHelp) {
+                motivoHelp.innerHTML = 'Descreva o motivo da alteração de status';
+                motivoHelp.className = 'form-text';
+            }
+            if (motivoObrigatorio) motivoObrigatorio.style.display = 'none';
+            if (contadorCaracteres) contadorCaracteres.style.display = 'none';
+            
+            // Não remover disabled aqui - será validado novamente quando abrir
+        });
+        
+        // Validar antes do submit
+        const form = document.getElementById('formStatus' + producaoId);
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!validarMotivoStatus(producaoId)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Focar no campo de motivo
+                    const motivoTextarea = document.getElementById('motivoStatus' + producaoId);
+                    if (motivoTextarea) {
+                        motivoTextarea.focus();
+                    }
+                    
+                    return false;
+                }
+                return true;
+            });
+        }
+    }
+}
+
+// ========== FIM DAS NOVAS FUNÇÕES ==========
+
 // Inicializar quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', function() {
     // Adicionar tooltips
@@ -1148,6 +1317,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 100);
             });
         }
+        
+        // Configurar modais de status (NOVO)
+        configurarModalStatus('{{ producao.id }}');
     })();
     {% endfor %}
 });
